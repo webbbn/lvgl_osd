@@ -152,9 +152,11 @@ void Telemetry::reader_thread() {
   bool messages_requested = false;
 
   printf("reader_thread running\b");
+  fflush(stdout);
   while(1) {
     ssize_t length = recv(m_recv_sock, data, max_length, 0);
     printf("received message with length = %ld\n", length);
+    fflush(stdout);
 
     if (!m_connected) {
       //set_value("ip_address", m_sender_endpoint.address().to_string());
@@ -165,6 +167,7 @@ void Telemetry::reader_thread() {
     for (size_t i = 0; i < length; ++i) {
       if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &msg, &status)) {
         printf("Received msgid: %d from %d:%d\n", msg.msgid, msg.sysid, msg.compid);
+        fflush(stdout);
 	m_sysid = msg.sysid;
 	m_compid = msg.compid;
 	switch (msg.msgid) {

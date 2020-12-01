@@ -53,9 +53,12 @@ void osd(void) {
 }
 
 int main(void) {
+  printf("Running\n");
+  fflush(stdout);
 
   // Create the Telemetry class that controls the telemetry receive threads
   Telemetry telem();
+  fflush(stdout);
 
   /* LittlevGL init */
   lv_init();
