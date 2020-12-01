@@ -149,8 +149,7 @@ void Telemetry::reader_thread() {
   bool messages_requested = false;
 
   while(1) {
-    //size_t length = m_recv_sock.receive_from(boost::asio::buffer(data, max_length), m_sender_endpoint);
-    size_t length = 0;
+    ssize_t length = recv(m_recv_sock, data, max_length, 0);
 
     if (!m_connected) {
       //set_value("ip_address", m_sender_endpoint.address().to_string());
@@ -160,6 +159,7 @@ void Telemetry::reader_thread() {
     bool heartbeat_received = false;
     for (size_t i = 0; i < length; ++i) {
       if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &msg, &status)) {
+        printf("Received msgid: %d from %d:%d\n", msg.msgid, msg.sysid, msg.compid);
 	m_sysid = msg.sysid;
 	m_compid = msg.compid;
 	switch (msg.msgid) {
