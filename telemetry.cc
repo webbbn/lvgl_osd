@@ -1,9 +1,14 @@
 
 #include <sys/time.h>
 
+#ifdef __WIN32
+#include <winsock2.h>
+#include <shlwapi.h>
+#else
 #include <net/if.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#endif
 
 #include <iostream>
 #include <thread>
@@ -48,13 +53,15 @@ int open_udp_socket_for_rx(uint16_t port, const std::string hostname) {
   }
 
   // Set the socket options.
+#if !defined(WIN32)
   int optval = 1;
   setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval , sizeof(int));
   setsockopt(fd, SOL_SOCKET, SO_BROADCAST, (const void *)&optval, sizeof(optval));
+#endif
 
   // Find to the receive port
   struct sockaddr_in saddr;
-  bzero((char *)&saddr, sizeof(saddr));
+  memset((char *)&saddr, 0, sizeof(saddr));
   saddr.sin_family = AF_INET;
   saddr.sin_port = htons(port);
 
@@ -150,7 +157,7 @@ void Telemetry::reader_thread() {
   mavlink_message_t msg;
   mavlink_status_t status;
   int max_length = 1024;
-  uint8_t data[max_length];
+  char data[max_length];
   bool messages_requested = false;
 
   while(1) {
