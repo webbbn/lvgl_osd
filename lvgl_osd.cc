@@ -57,8 +57,13 @@ int main(void) {
   fflush(stdout);
 
   // Create the Telemetry class that controls the telemetry receive threads
-  Telemetry telem();
+  Telemetry telem;
+  printf("Telem created\n");
   fflush(stdout);
+  if (!telem.start("127.0.0.1", 14950, "127.0.0.1", 5800)) {
+    fprintf(stderr, "Error starting the telemetry receive threads.");
+    fflush(stderr);
+  }
 
   /* LittlevGL init */
   lv_init();

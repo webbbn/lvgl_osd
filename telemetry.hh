@@ -8,8 +8,12 @@
 class Telemetry {
 public:
 
-  Telemetry(const std::string &telemetry_host = "0.0.0.0", uint16_t telemetry_port = 14950,
-            const std::string &status_host = "0.0.0.0", uint16_t status_port = 5800);
+  Telemetry() : m_recv_sock(0), m_status_recv_sock(0), m_sysid(0), m_compid(0),
+                m_last_telemetry_packet_time(0), m_sender_valid(false), m_rec_bat_status(false),
+                m_connected(false) {}
+
+  bool start(const std::string &telemetry_host, uint16_t telemetry_port,
+             const std::string &status_host, uint16_t status_port);
 
   bool get_value(const std::string &name, float &value) const;
 
