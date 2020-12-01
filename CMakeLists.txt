@@ -15,5 +15,5 @@ file(GLOB_RECURSE SOURCES  "lv_drivers/*.c"  "lvgl/*.c" )
 
 find_package(SDL2 REQUIRED SDL2)
 include_directories(${SDL2_INCLUDE_DIRS})
-add_executable(lvgl_osd lvgl_osd.cc telemetry.cc attitude_background.c ${SOURCES} ${INCLUDES})
+add_executable(lvgl_osd lvgl_osd.cc telemetry.cc attitude_background.c img_hand.c ${SOURCES} ${INCLUDES})
 target_link_libraries(lvgl_osd PRIVATE SDL2 pthread)
