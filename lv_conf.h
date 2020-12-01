@@ -252,7 +252,7 @@ typedef void * lv_img_decoder_user_data_t;
 
 /* 1: use a custom tick source.
  * It removes the need to manually update the tick with `lv_tick_inc`) */
-#define LV_TICK_CUSTOM     1
+#define LV_TICK_CUSTOM     0
 #if LV_TICK_CUSTOM == 1
 #define LV_TICK_CUSTOM_INCLUDE  <stdint.h>       /*Header for the sys time function*/
 uint32_t custom_tick_get();
