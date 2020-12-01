@@ -21,10 +21,20 @@ void lv_ex_canvas_2(void);
 static lv_obj_t *label = NULL;
 static lv_style_t style;
 
+// Images
+LV_IMG_DECLARE(attitude_background);
+static lv_obj_t *att_back_img;
+
 /**
  * Create a transparent canvas with Chroma keying and indexed color format (palette).
  */
 void osd(void) {
+
+  // Place the image
+  att_back_img = lv_img_create(lv_scr_act(), NULL);
+  lv_img_set_src(att_back_img, &attitude_background);
+  lv_obj_align(att_back_img, NULL, LV_ALIGN_CENTER, 0, -200);
+  lv_img_set_pivot(att_back_img, attitude_background.header.w / 2, attitude_background.header.h / 2);
 
   label = lv_label_create(lv_layer_sys(), NULL);
   lv_label_set_align(label, LV_LABEL_ALIGN_RIGHT);
@@ -97,6 +107,7 @@ int main(void) {
     if (++cntr == 20) {
       lv_label_set_text_fmt(label, "Countdown: %d", cntr2);
       lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
+      lv_img_set_angle(att_back_img, cntr2 * 360);
       cntr = 0;
       ++cntr2;
     }
