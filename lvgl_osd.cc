@@ -73,8 +73,9 @@ void osd(void) {
   lv_gauge_set_needle_count(gauge1, 3, needle_colors);
   lv_obj_set_size(gauge1, 200, 200);
   lv_obj_align(gauge1, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_clean_style_list(gauge1, LV_GAUGE_PART_MAIN);
   lv_obj_set_style_local_text_font(gauge1, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
-  lv_obj_set_style_local_bg_opa(label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
+  //lv_obj_set_style_local_bg_opa(label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
   //lv_obj_add_style(guage1, LV_OBJ_PART_MAIN, &style);
   lv_gauge_set_needle_img(gauge1, &img_hand, 4, 4);
 
