@@ -113,8 +113,6 @@ private:
 
 bool Telemetry::start(const std::string &telemetry_host, uint16_t telemetry_port,
                       const std::string &status_host, uint16_t status_port) {
-  printf("In telemetry");
-  fflush(stdout);
   m_recv_sock = open_udp_socket_for_rx(telemetry_port, telemetry_host);
   m_status_recv_sock = open_udp_socket_for_rx(status_port, status_host);
   if ((m_recv_sock < 0) || (m_status_recv_sock < 0)) {
@@ -125,8 +123,6 @@ bool Telemetry::start(const std::string &telemetry_host, uint16_t telemetry_port
     printf("Opened telemetry port: %s:%d and status port %s:%d\n",
             telemetry_host.c_str(), telemetry_port, status_host.c_str(), status_port);
   }
-  printf("m_recv_sock: %d  m_status_recv_sock: %d\n", m_recv_sock, m_status_recv_sock);
-  fflush(stdout);
   //std::thread([this]() { this->reader_thread(); }).detach();
   //std::thread([this]() { this->wfb_reader_thread(); }).detach();
   m_receive_thread.reset(new std::thread([this]() { this->reader_thread(); }));
@@ -157,12 +153,8 @@ void Telemetry::reader_thread() {
   uint8_t data[max_length];
   bool messages_requested = false;
 
-  printf("reader_thread running\b");
-  fflush(stdout);
   while(1) {
     ssize_t length = recv(m_recv_sock, data, max_length, 0);
-    printf("received message with length = %ld\n", length);
-    fflush(stdout);
 
     if (!m_connected) {
       //set_value("ip_address", m_sender_endpoint.address().to_string());
@@ -172,8 +164,6 @@ void Telemetry::reader_thread() {
     bool heartbeat_received = false;
     for (size_t i = 0; i < length; ++i) {
       if (mavlink_parse_char(MAVLINK_COMM_0, data[i], &msg, &status)) {
-        printf("Received msgid: %d from %d:%d\n", msg.msgid, msg.sysid, msg.compid);
-        fflush(stdout);
 	m_sysid = msg.sysid;
 	m_compid = msg.compid;
 	switch (msg.msgid) {
