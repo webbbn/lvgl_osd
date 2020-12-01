@@ -77,12 +77,12 @@ void osd(void) {
   lv_obj_set_style_local_text_font(gauge1, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
   //lv_obj_set_style_local_bg_opa(label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
   //lv_obj_add_style(guage1, LV_OBJ_PART_MAIN, &style);
-  lv_obj_set_style_local_bg_opa(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, 80);
-  lv_obj_set_style_local_bg_color(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-  lv_obj_set_style_local_bg_grad_color(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-  lv_obj_set_style_local_line_color(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-  lv_obj_set_style_local_scale_grad_color(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_YELLOW);
-  lv_obj_set_style_local_scale_end_color(label, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
+  lv_obj_set_style_local_bg_opa(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, 80);
+  lv_obj_set_style_local_bg_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+  lv_obj_set_style_local_bg_grad_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
+  lv_obj_set_style_local_line_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
+  lv_obj_set_style_local_scale_grad_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_YELLOW);
+  lv_obj_set_style_local_scale_end_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
   lv_gauge_set_needle_img(gauge1, &img_hand, 4, 4);
 
   /*Set the values*/
