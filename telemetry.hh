@@ -8,7 +8,7 @@
 class Telemetry {
 public:
 
-  Telemetry(const std::string &telemetry_host = "0.0.0.0", uint16_t telemetry_port = 14550,
+  Telemetry(const std::string &telemetry_host = "0.0.0.0", uint16_t telemetry_port = 14950,
             const std::string &status_host = "0.0.0.0", uint16_t status_port = 5800);
 
   bool get_value(const std::string &name, float &value) const;
