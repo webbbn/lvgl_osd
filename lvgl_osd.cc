@@ -82,6 +82,15 @@ void osd(void) {
   lv_gauge_set_value(gauge1, 0, 10);
   lv_gauge_set_value(gauge1, 1, 20);
   lv_gauge_set_value(gauge1, 2, 30);
+
+  /*Create a line meter */
+  lv_obj_t * lmeter;
+  lmeter = lv_linemeter_create(lv_scr_act(), NULL);
+  lv_linemeter_set_range(lmeter, 0, 100);                   /*Set the range*/
+  lv_linemeter_set_value(lmeter, 80);                       /*Set the current value*/
+  lv_linemeter_set_scale(lmeter, 240, 21);                  /*Set the angle and number of lines*/
+  lv_obj_set_size(lmeter, 150, 150);
+  lv_obj_align(lmeter, NULL, LV_ALIGN_CENTER, -400, 0);
 }
 
 int main(void) {
