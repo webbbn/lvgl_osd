@@ -118,6 +118,9 @@ Telemetry::Telemetry(const std::string &telemetry_host, uint16_t telemetry_port,
   m_status_recv_sock = open_udp_socket_for_rx(status_port, status_host);
   if ((m_recv_sock < 0) || (m_status_recv_sock < 0)) {
     fprintf(stderr, "Error binding to telemetry sockets\n");
+  } else {
+    printf("Opened telemetry port: %s:%d and status port %s:%d\n",
+            telemetry_host.c_str(), telemetry_port, status_host.c_str(), status_port);
   }
   //std::thread([this]() { this->reader_thread(); }).detach();
   //std::thread([this]() { this->wfb_reader_thread(); }).detach();
@@ -148,8 +151,10 @@ void Telemetry::reader_thread() {
   uint8_t data[max_length];
   bool messages_requested = false;
 
+  printf("reader_thread running\b");
   while(1) {
     ssize_t length = recv(m_recv_sock, data, max_length, 0);
+    printf("received message with length = %ld\n", length);
 
     if (!m_connected) {
       //set_value("ip_address", m_sender_endpoint.address().to_string());
