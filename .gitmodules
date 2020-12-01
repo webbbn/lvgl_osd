@@ -1,0 +1,9 @@
+[submodule "modules/lv_drivers"]
+	path = lv_drivers
+	url = https://github.com/littlevgl/lv_drivers.git
+[submodule "modules/lvgl"]
+	path = lvgl
+	url = https://github.com/littlevgl/lvgl.git
+[submodule "modules/mavlink"]
+	path = mavlink
+	url = https://github.com/mavlink/c_library_v2.git
