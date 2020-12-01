@@ -114,14 +114,18 @@ private:
 Telemetry::Telemetry(const std::string &telemetry_host, uint16_t telemetry_port,
                      const std::string &status_host, uint16_t status_port) :
   m_sysid(0), m_compid(0), m_rec_bat_status(false), m_connected(false) {
+  printf("In telemetry");
+  fflush(stdout);
   m_recv_sock = open_udp_socket_for_rx(telemetry_port, telemetry_host);
   m_status_recv_sock = open_udp_socket_for_rx(status_port, status_host);
   if ((m_recv_sock < 0) || (m_status_recv_sock < 0)) {
-    fprintf(stderr, "Error binding to telemetry sockets\n");
+    printf("Error binding to telemetry sockets\n");
   } else {
     printf("Opened telemetry port: %s:%d and status port %s:%d\n",
             telemetry_host.c_str(), telemetry_port, status_host.c_str(), status_port);
   }
+  printf("m_recv_sock: %d  m_status_recv_sock: %d\n", m_recv_sock, m_status_recv_sock);
+  fflush(stdout);
   //std::thread([this]() { this->reader_thread(); }).detach();
   //std::thread([this]() { this->wfb_reader_thread(); }).detach();
   m_receive_thread.reset(new std::thread([this]() { this->reader_thread(); }));
