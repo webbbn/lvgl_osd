@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(lvgl_osd)
 set(CMAKE_CXX_STANDARD 11)
+set(C_STANDARD 99)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-address-of-packed-member -O3 -DNDEBUG")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-address-of-packed-member -O3 -DNDEBUG")
 
