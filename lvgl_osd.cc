@@ -26,7 +26,6 @@ static int tick_thread(void *data);
 
 static lv_indev_t * kb_indev;
 static lv_obj_t *label = NULL;
-static lv_style_t style;
 
 // Images
 LV_IMG_DECLARE(attitude_background);
@@ -37,28 +36,9 @@ static lv_obj_t *att_back_img;
  */
 void osd(void) {
 
-  // Place the image
-  att_back_img = lv_img_create(lv_scr_act(), NULL);
-  lv_img_set_src(att_back_img, &attitude_background);
-  lv_obj_align(att_back_img, NULL, LV_ALIGN_CENTER, 0, -200);
-  lv_img_set_pivot(att_back_img, attitude_background.header.w / 2, attitude_background.header.h / 2);
-
-  label = lv_label_create(lv_layer_sys(), NULL);
-  lv_label_set_align(label, LV_LABEL_ALIGN_RIGHT);
-  lv_obj_set_style_local_bg_opa(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_COVER);
-  lv_obj_set_style_local_bg_color(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-  lv_obj_set_style_local_text_color(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-  lv_obj_set_style_local_pad_top(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, 3);
-  lv_obj_set_style_local_pad_bottom(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, 3);
-  lv_obj_set_style_local_pad_left(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, 3);
-  lv_obj_set_style_local_pad_right(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, 3);
-  lv_obj_set_style_local_text_font(label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_48);
-  lv_label_set_text(label, "?");
-  lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
-
+  // Default style properties
+  static lv_style_t style;
   lv_style_init(&style);
-  lv_style_set_radius(&style, LV_STATE_DEFAULT, 5);
-
   lv_style_set_bg_opa(&style, LV_STATE_DEFAULT, LV_OPA_TRANSP);
   lv_style_set_bg_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
   lv_style_set_bg_grad_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
@@ -66,31 +46,68 @@ void osd(void) {
   lv_style_set_value_opa(&style, LV_STATE_DEFAULT, LV_OPA_COVER);
   lv_style_set_value_color(&style, LV_STATE_DEFAULT, LV_COLOR_WHITE);
   lv_style_set_text_font(&style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
+
+  // Gauge properties
+  lv_style_set_bg_opa(&style, LV_GAUGE_PART_MAIN, 100);
+  lv_style_set_bg_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_line_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_scale_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_YELLOW);
+  lv_style_set_scale_end_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_scale_end_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_border_width(&style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_pad_inner(&style, LV_GAUGE_PART_MAIN, 15);
+  lv_style_set_pad_top(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_pad_left(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_pad_right(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_text_font(&style, LV_GAUGE_PART_MAIN, &lv_font_montserrat_16);
+
+  // Label properties
+  lv_style_set_bg_opa(&style, LV_LABEL_PART_MAIN, LV_OPA_TRANSP);
+  lv_style_set_bg_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_text_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_pad_top(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_bottom(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_left(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_right(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_border_width(&style, LV_LABEL_PART_MAIN, 0);
+
   lv_obj_add_style(lv_scr_act(), LV_OBJ_PART_MAIN, &style);
+
+  // Copy the style for labels, but increase the font size
+  static lv_style_t label_style;
+  lv_style_copy(&label_style, &style);
+  lv_style_set_text_font(&label_style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
+  
+  // Place the image
+  att_back_img = lv_img_create(lv_scr_act(), NULL);
+  lv_img_set_src(att_back_img, &attitude_background);
+  lv_obj_align(att_back_img, NULL, LV_ALIGN_CENTER, 0, -200);
+  lv_img_set_pivot(att_back_img, attitude_background.header.w / 2, attitude_background.header.h / 2);
+
+  label = lv_label_create(lv_scr_act(), NULL);
+  lv_label_set_align(label, LV_LABEL_ALIGN_RIGHT);
+  lv_label_set_text(label, "?");
+  lv_obj_add_style(label, LV_LABEL_PART_MAIN, &label_style);
+  lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
+
 
   /*Describe the color for the needles*/
   static lv_color_t needle_colors[3];
   needle_colors[0] = LV_COLOR_BLUE;
   needle_colors[1] = LV_COLOR_ORANGE;
   needle_colors[2] = LV_COLOR_PURPLE;
-  LV_IMG_DECLARE(img_hand);
+  //LV_IMG_DECLARE(img_hand);
 
   /*Create a gauge*/
   lv_obj_t * gauge1 = lv_gauge_create(lv_scr_act(), NULL);
   lv_gauge_set_needle_count(gauge1, 3, needle_colors);
   lv_obj_set_size(gauge1, 200, 200);
   lv_obj_align(gauge1, NULL, LV_ALIGN_CENTER, 0, 0);
-  //lv_obj_clean_style_list(gauge1, LV_GAUGE_PART_MAIN);
-  lv_obj_set_style_local_text_font(gauge1, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT, &lv_font_montserrat_16);
-  //lv_obj_set_style_local_bg_opa(label, LV_OBJ_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
-  //lv_obj_add_style(guage1, LV_OBJ_PART_MAIN, &style);
-  lv_obj_set_style_local_bg_opa(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, 80);
-  lv_obj_set_style_local_bg_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-  lv_obj_set_style_local_bg_grad_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_BLACK);
-  lv_obj_set_style_local_line_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-  lv_obj_set_style_local_scale_grad_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_YELLOW);
-  lv_obj_set_style_local_scale_end_color(gauge1, LV_GAUGE_PART_MAIN, LV_STATE_DEFAULT, LV_COLOR_RED);
-  lv_gauge_set_needle_img(gauge1, &img_hand, 4, 4);
+  //lv_gauge_set_needle_img(gauge1, &img_hand, 4, 4);
 
   /*Set the values*/
   lv_gauge_set_value(gauge1, 0, 10);
