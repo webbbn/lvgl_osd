@@ -45,7 +45,7 @@ void osd(void) {
   lv_style_set_bg_grad_dir(&style, LV_STATE_DEFAULT, LV_GRAD_DIR_NONE);
   lv_style_set_value_opa(&style, LV_STATE_DEFAULT, LV_OPA_COVER);
   lv_style_set_value_color(&style, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-  lv_style_set_text_font(&style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
+  lv_style_set_text_font(&style, LV_STATE_DEFAULT, &lv_font_montserrat_16);
 
   // Gauge properties
   lv_style_set_bg_opa(&style, LV_GAUGE_PART_MAIN, 100);
@@ -54,7 +54,7 @@ void osd(void) {
   lv_style_set_line_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
   lv_style_set_scale_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_YELLOW);
   lv_style_set_scale_end_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
-  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 2);
   lv_style_set_scale_end_border_width(&style, LV_GAUGE_PART_MAIN, 0);
   lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
   lv_style_set_border_width(&style, LV_GAUGE_PART_MAIN, 2);
@@ -63,6 +63,23 @@ void osd(void) {
   lv_style_set_pad_left(&style, LV_GAUGE_PART_MAIN, 5);
   lv_style_set_pad_right(&style, LV_GAUGE_PART_MAIN, 5);
   lv_style_set_text_font(&style, LV_GAUGE_PART_MAIN, &lv_font_montserrat_16);
+
+  // Line meter properties
+  lv_style_set_bg_opa(&style, LV_LINEMETER_PART_MAIN, 100);
+  lv_style_set_bg_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_line_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_scale_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_YELLOW);
+  lv_style_set_scale_end_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
+  lv_style_set_scale_end_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
+  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
+  lv_style_set_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
+  lv_style_set_pad_inner(&style, LV_LINEMETER_PART_MAIN, 15);
+  lv_style_set_pad_top(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_pad_left(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_pad_right(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_text_font(&style, LV_LINEMETER_PART_MAIN, &lv_font_montserrat_16);
 
   // Label properties
   lv_style_set_bg_opa(&style, LV_LABEL_PART_MAIN, LV_OPA_TRANSP);
@@ -81,13 +98,15 @@ void osd(void) {
   static lv_style_t label_style;
   lv_style_copy(&label_style, &style);
   lv_style_set_text_font(&label_style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
-  
+
   // Place the image
   att_back_img = lv_img_create(lv_scr_act(), NULL);
   lv_img_set_src(att_back_img, &attitude_background);
+  lv_obj_add_style(att_back_img, LV_IMG_PART_MAIN, &style);
   lv_obj_align(att_back_img, NULL, LV_ALIGN_CENTER, 0, -200);
   lv_img_set_pivot(att_back_img, attitude_background.header.w / 2, attitude_background.header.h / 2);
 
+  // Create a test label
   label = lv_label_create(lv_scr_act(), NULL);
   lv_label_set_align(label, LV_LABEL_ALIGN_RIGHT);
   lv_label_set_text(label, "?");
@@ -95,33 +114,42 @@ void osd(void) {
   lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
 
 
-  /*Describe the color for the needles*/
+  // Describe the color for the needles
   static lv_color_t needle_colors[3];
   needle_colors[0] = LV_COLOR_BLUE;
   needle_colors[1] = LV_COLOR_ORANGE;
   needle_colors[2] = LV_COLOR_PURPLE;
   //LV_IMG_DECLARE(img_hand);
 
-  /*Create a gauge*/
+  // Create a gauge
   lv_obj_t * gauge1 = lv_gauge_create(lv_scr_act(), NULL);
   lv_gauge_set_needle_count(gauge1, 3, needle_colors);
   lv_obj_set_size(gauge1, 200, 200);
   lv_obj_align(gauge1, NULL, LV_ALIGN_CENTER, 0, 0);
-  //lv_gauge_set_needle_img(gauge1, &img_hand, 4, 4);
+  lv_obj_add_style(gauge1, LV_OBJ_PART_MAIN, &style);
 
-  /*Set the values*/
+  // Set the gague values
   lv_gauge_set_value(gauge1, 0, 10);
   lv_gauge_set_value(gauge1, 1, 20);
   lv_gauge_set_value(gauge1, 2, 30);
 
-  /*Create a line meter */
-  lv_obj_t * lmeter;
-  lmeter = lv_linemeter_create(lv_scr_act(), NULL);
+  // Create a line meter
+  lv_obj_t *lmeter = lv_linemeter_create(lv_scr_act(), NULL);
+  lv_obj_add_style(lmeter, LV_LINEMETER_PART_MAIN, &style);
   lv_linemeter_set_range(lmeter, 0, 100);                   /*Set the range*/
   lv_linemeter_set_value(lmeter, 80);                       /*Set the current value*/
   lv_linemeter_set_scale(lmeter, 240, 21);                  /*Set the angle and number of lines*/
   lv_obj_set_size(lmeter, 150, 150);
   lv_obj_align(lmeter, NULL, LV_ALIGN_CENTER, -400, 0);
+
+  // Create an inner line meter
+  lv_obj_t *lmeter2 = lv_linemeter_create(lv_scr_act(), NULL);
+  lv_obj_add_style(lmeter2, LV_LINEMETER_PART_MAIN, &style);
+  lv_linemeter_set_range(lmeter2, 0, 100);                   /*Set the range*/
+  lv_linemeter_set_value(lmeter2, 80);                       /*Set the current value*/
+  lv_linemeter_set_scale(lmeter2, 240, 21);                  /*Set the angle and number of lines*/
+  lv_obj_set_size(lmeter2, 100, 100);
+  lv_obj_align(lmeter2, NULL, LV_ALIGN_CENTER, -400, 0);
 }
 
 /**
