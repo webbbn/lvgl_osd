@@ -116,6 +116,13 @@ static lv_obj_t *north_arrow_img;
 */
 LV_IMG_DECLARE(satellite);
 LV_IMG_DECLARE(bat_full);
+LV_IMG_DECLARE(sig_0);
+LV_IMG_DECLARE(sig_1);
+LV_IMG_DECLARE(sig_2);
+LV_IMG_DECLARE(sig_3);
+LV_IMG_DECLARE(sig_4);
+LV_IMG_DECLARE(sig_5);
+LV_IMG_DECLARE(sig_6);
 
 /**
  * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics library
@@ -278,6 +285,60 @@ int main(int argv, char**argc) {
   static lv_style_t units_style;
   lv_style_copy(&units_style, &label_style);
   lv_style_set_text_font(&units_style, LV_STATE_DEFAULT, &lv_font_montserrat_14);
+
+
+  /*********************************
+   * Create the signal quality group
+   *********************************/
+
+  // Create the signal strength down group
+  lv_obj_t *sigdown_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(sigdown_group, true);
+  lv_obj_align_origo(sigdown_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(sigdown_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(sigdown_group, LV_LAYOUT_COLUMN_LEFT);
+  lv_obj_align(sigdown_group, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 30);
+  lv_obj_add_style(sigdown_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the rssi down group
+  lv_obj_t *rssi_down_group = lv_cont_create(sigdown_group, NULL);
+  lv_obj_set_auto_realign(rssi_down_group, true);
+  lv_obj_align_origo(rssi_down_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(rssi_down_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(rssi_down_group, LV_LAYOUT_ROW_BOTTOM);
+  lv_obj_align(rssi_down_group, sigdown_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_add_style(rssi_down_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the rssi down icon
+  lv_obj_t *rssi_down_img = lv_img_create(rssi_down_group, NULL);
+  lv_img_set_src(rssi_down_img, &sig_0);
+  lv_obj_align(rssi_down_img, rssi_down_group, LV_ALIGN_IN_TOP_LEFT, 0, 0);
+  lv_obj_set_auto_realign(rssi_down_img, true);
+  lv_obj_add_style(rssi_down_img, LV_IMG_PART_MAIN, &style);
+
+  // Add the rssi down value label
+  lv_obj_t *rssi_down_label = lv_label_create(rssi_down_group, NULL);
+  lv_label_set_align(rssi_down_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rssi_down_label, rssi_down_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(rssi_down_label, true);
+  lv_obj_t *dbm_down_label = lv_label_create(rssi_down_group, NULL);
+  lv_label_set_align(dbm_down_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(dbm_down_label, rssi_down_label, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(dbm_down_label, true);
+  lv_obj_add_style(dbm_down_label, LV_LABEL_PART_MAIN, &units_style);
+  lv_label_set_text(dbm_down_label, "dbm " LV_SYMBOL_DOWN);
+
+  // Add the bitrate label
+  lv_obj_t *rx_bitrate_label = lv_label_create(sigdown_group, NULL);
+  lv_label_set_align(rx_bitrate_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rx_bitrate_label, sigdown_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(rx_bitrate_label, true);
+
+  // Add the video stats label
+  lv_obj_t *rx_video_stats_label = lv_label_create(sigdown_group, NULL);
+  lv_label_set_align(rx_video_stats_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rx_video_stats_label, sigdown_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(rx_video_stats_label, true);
 
   /***********************
    * Create the GPS object
@@ -461,6 +522,38 @@ int main(int argv, char**argc) {
       // sats_vis < 8  sats_vis < 6   hdop > 15  hdop > 9
       lv_label_set_text_fmt(sats_label, "%2d", int(sats_vis + 0.5));
       lv_label_set_text_fmt(hdop_label, "%5.1f", hdop);
+
+      // Set the downlink stats
+      float rx_rssi = 0;
+      float rx_video_packet_count = 0;
+      float rx_video_bitrate = 8347837.5;
+      float rx_video_dropped_packets = 10;
+      float rx_video_bad_blocks = 99;
+      telem.get_value("rx_video_rssi", rx_rssi);
+      telem.get_value("rx_video_packet_count", rx_video_packet_count);
+      telem.get_value("rx_video_bitrate", rx_video_bitrate);
+      telem.get_value("rx_video_dropped_packets", rx_video_dropped_packets);
+      telem.get_value("rx_video_bad_blocks", rx_video_bad_blocks);
+      lv_label_set_text_fmt(rssi_down_label, "%6.1f", rx_rssi);
+      lv_label_set_text_fmt(rx_bitrate_label, "%4.1f Mbps",
+                            rx_video_bitrate * 1e-6);
+      lv_label_set_text_fmt(rx_video_stats_label, "%5d/%3d/%2d",
+                            rx_video_packet_count, rx_video_dropped_packets, rx_video_bad_blocks);
+      if (rx_rssi < -85) {
+        lv_img_set_src(rssi_down_img, &sig_0);
+      } else if (rx_rssi < -70) {
+        lv_img_set_src(rssi_down_img, &sig_1);
+      } else if (rx_rssi < -60) {
+        lv_img_set_src(rssi_down_img, &sig_2);
+      } else if (rx_rssi < -50) {
+        lv_img_set_src(rssi_down_img, &sig_3);
+      } else if (rx_rssi < -40) {
+        lv_img_set_src(rssi_down_img, &sig_4);
+      } else if (rx_rssi < -30) {
+        lv_img_set_src(rssi_down_img, &sig_5);
+      } else if (rx_rssi < -20) {
+        lv_img_set_src(rssi_down_img, &sig_6);
+      }
     }
   }
 

@@ -39,5 +39,12 @@ add_executable(lvgl_osd
   north_arrow_ring.c
   satellite.c
   bat_full.c
+  sig_0.c
+  sig_1.c
+  sig_2.c
+  sig_3.c
+  sig_4.c
+  sig_5.c
+  sig_6.c
   ${SOURCES} ${INCLUDES})
 target_link_libraries(lvgl_osd PRIVATE ${EXTRA_LIBS})
