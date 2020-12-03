@@ -17,7 +17,41 @@
 #include <mavlink.h>
 
 #include <telemetry.hh>
-//#include <transfer_stats.hh>
+
+// Standard OpenHD stats structures.
+typedef struct {
+    uint32_t received_packet_cnt;
+    int8_t current_signal_dbm;
+    int8_t type; // 0 = Atheros, 1 = Ralink
+    int8_t signal_good;
+} __attribute__((packed)) wifi_adapter_rx_status_forward_t;
+
+typedef struct {
+  uint32_t damaged_block_cnt; // number bad blocks video downstream
+  uint32_t lost_packet_cnt; // lost packets video downstream
+  uint32_t skipped_packet_cnt; // skipped packets video downstream
+  uint32_t injection_fail_cnt;  // Video injection failed downstream
+  uint32_t received_packet_cnt; // packets received video downstream
+  uint32_t kbitrate; // live video kilobitrate per second video downstream
+  uint32_t kbitrate_measured; // max measured kbitrate during tx startup
+  uint32_t kbitrate_set; // set kilobitrate (measured * bitrate_percent) during tx startup
+  uint32_t lost_packet_cnt_telemetry_up; // lost packets telemetry uplink
+  uint32_t lost_packet_cnt_telemetry_down; // lost packets telemetry downlink
+  uint32_t lost_packet_cnt_msp_up; // lost packets msp uplink (not used at the moment)
+  uint32_t lost_packet_cnt_msp_down; // lost packets msp downlink (not used at the moment)
+  uint32_t lost_packet_cnt_rc; // lost packets rc link
+  int8_t current_signal_joystick_uplink; // signal strength in dbm at air pi (telemetry upstream and rc link)
+  int8_t current_signal_telemetry_uplink;
+  int8_t joystick_connected; // 0 = no joystick connected, 1 = joystick connected
+  float HomeLat;
+  float HomeLon;
+  uint8_t cpuload_gnd; // CPU load Ground Pi
+  uint8_t temp_gnd; // CPU temperature Ground Pi
+  uint8_t cpuload_air; // CPU load Air Pi
+  uint8_t temp_air; // CPU temperature Air Pi
+  uint32_t wifi_adapter_cnt; // number of wifi adapters
+  wifi_adapter_rx_status_forward_t adapter[6]; // same struct as in wifibroadcast lib.h
+} __attribute__((packed)) wifibroadcast_rx_status_forward_t;
 
 inline double cur_time() {
   struct timeval t;
@@ -130,8 +164,7 @@ bool Telemetry::start(const std::string &telemetry_host, uint16_t telemetry_port
     printf("Opened telemetry port: %s:%d and status port %s:%d\n",
             telemetry_host.c_str(), telemetry_port, status_host.c_str(), status_port);
   }
-  //std::thread([this]() { this->reader_thread(); }).detach();
-  //std::thread([this]() { this->wfb_reader_thread(); }).detach();
+  m_stats_thread.reset(new std::thread([this]() { this->wfb_reader_thread(); }));
   m_receive_thread.reset(new std::thread([this]() { this->reader_thread(); }));
   return true;
 }
@@ -376,7 +409,6 @@ void Telemetry::reader_thread() {
 }
 
 void Telemetry::wfb_reader_thread() {
-#if 0
   double last_recv = 0;
   double last_send = 0;
   // We want to display a time window of the last 10 seconds, but we want
@@ -386,17 +418,16 @@ void Telemetry::wfb_reader_thread() {
   wifibroadcast_rx_status_forward_t prev_link_stats;
   double rx_quality = 0;
   float link_timeout = 5.0;
-  boost::asio::ip::udp::endpoint sender_endpoint;
 
   while(1) {
 
     // Receive the next link status message
     wifibroadcast_rx_status_forward_t link_stats;
-    size_t len = m_status_recv_sock.receive_from
-      (boost::asio::buffer(&link_stats, sizeof(link_stats)), sender_endpoint);
+    ssize_t len = recv(m_status_recv_sock, reinterpret_cast<char*>(&link_stats), sizeof(link_stats), 0);
     if (len != sizeof(link_stats)) {
       continue;
     }
+    std::cerr << "Received status\n";
 
     // Insert a new stats message into the queue if the second has rolled over.
     double time = cur_time();
@@ -432,5 +463,4 @@ void Telemetry::wfb_reader_thread() {
 
     prev_link_stats = link_stats;
   }
-#endif
 }

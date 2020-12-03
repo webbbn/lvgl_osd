@@ -289,7 +289,7 @@ int main(int argv, char**argc) {
   lv_obj_align_origo(gps_group, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_cont_set_fit(gps_group, LV_FIT_TIGHT);
   lv_cont_set_layout(gps_group, LV_LAYOUT_COLUMN_LEFT);
-  lv_obj_align(gps_group, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -50, -10);
+  lv_obj_align(gps_group, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -50, -30);
   lv_obj_add_style(gps_group, LV_LABEL_PART_MAIN, &label_style);
 
   // Add the satellite status group
@@ -349,7 +349,7 @@ int main(int argv, char**argc) {
   lv_obj_align_origo(bat_group, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_cont_set_fit(bat_group, LV_FIT_TIGHT);
   lv_cont_set_layout(bat_group, LV_LAYOUT_ROW_MID);
-  lv_obj_align(bat_group, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 25, -10);
+  lv_obj_align(bat_group, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 30, -30);
   lv_obj_add_style(bat_group, LV_LABEL_PART_MAIN, &label_style);
 
   // Create the vertical battery group
@@ -380,7 +380,7 @@ int main(int argv, char**argc) {
   // Add the flight mode label
   lv_obj_t *mode_label = lv_label_create(lv_scr_act(), NULL);
   lv_label_set_align(mode_label, LV_LABEL_ALIGN_CENTER);
-  lv_obj_align(mode_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
+  lv_obj_align(mode_label, NULL, LV_ALIGN_IN_BOTTOM_MID, -30, -30);
   lv_obj_set_auto_realign(mode_label, true);
 
   // Increase the font size of the mode string
@@ -420,14 +420,14 @@ int main(int argv, char**argc) {
       float sec = fabs((min - static_cast<float>(min_int)) * 60.0);
       int8_t geo_x = -10;
       char NS = (latitude < 0) ? 'S' : 'N';
-      lv_label_set_text_fmt(lat_label, "%3d %2d %5.1f %c deg", deg_int, min_int, sec, NS);
+      lv_label_set_text_fmt(lat_label, "%3d %2d %5.1f %c", deg_int, min_int, sec, NS);
       deg = fabs(std::max(std::min(longitude, 180.0F), -180.0F));
       deg_int = static_cast<int32_t>(deg);
       min = (deg - static_cast<float>(deg_int)) * 60.0;
       min_int = static_cast<int32_t>(fabs(min));
       sec = fabs((min - static_cast<float>(min_int)) * 60.0);
       char EW = ((longitude < 0) ? 'W' : 'E');
-      lv_label_set_text_fmt(lon_label, "%3d %2d %5.1f %c deg", deg_int, min_int, sec, EW);
+      lv_label_set_text_fmt(lon_label, "%3d %2d %5.1f %c", deg_int, min_int, sec, EW);
 
       // Set the battery status text
       float remain = 75;
@@ -440,10 +440,10 @@ int main(int argv, char**argc) {
       }
       float voltage = 11.9;
       telem.get_value("voltage_battery", voltage);
-      lv_label_set_text_fmt(volt_label, "%4.1f V", voltage);
+      lv_label_set_text_fmt(volt_label, "%4.1f V ", voltage);
       float current = 10.2;
       telem.get_value("current_battery", current);
-      lv_label_set_text_fmt(cur_label, "%4.1f A", current);
+      lv_label_set_text_fmt(cur_label, "%4.1f A ", current);
 
       // Set the mode text.
       float mode_val = 0;

@@ -41,4 +41,5 @@ private:
   bool m_rec_bat_status;
   bool m_connected;
   std::shared_ptr<std::thread> m_receive_thread;
+  std::shared_ptr<std::thread> m_stats_thread;
 };
