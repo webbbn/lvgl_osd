@@ -25,132 +25,95 @@ void lv_ex_canvas_2(void);
 static int tick_thread(void *data);
 
 static lv_indev_t * kb_indev;
-static lv_obj_t *label = NULL;
+static lv_style_t style;
+static const char *g_arducopter_mode_strings[] = {
+  "Stabilize", // manual airframe angle with manual throttle
+  "Acro",      // manual body-frame angular rate with manual throttle
+  "Alt Hold",  // manual airframe angle with automatic throttle
+  "Auto",      // fully automatic waypoint control using mission commands
+  "Guided",    // fully automatic fly to coordinate or fly at velocity/direction using GCS immediate commands
+  "Loiter",    // automatic horizontal acceleration with automatic throttle
+  "RTL",       // automatic return to launching point
+  "Circle",    // automatic circular flight with automatic throttle
+  "Land",      // automatic landing with horizontal position control
+  "Drift",     // semi-automous position, yaw and throttle control
+  "Sport",     // manual earth-frame angular rate control with manual throttle
+  "Flip",      // automatically flip the vehicle on the roll axis
+  "Autotune",  // automatically tune the vehicle's roll and pitch gains
+  "Poshold",   // automatic position hold with manual override, with automatic throttle
+  "Brake",     // full-brake using inertial/GPS system, no pilot input
+  "Throw",     // throw to launch mode using inertial/GPS system, no pilot input
+  "Avoid",     // automatic avoidance of obstacles in the macro scale - e.g. full-sized aircraft
+  "Guided",    // guided mode but only accepts attitude and altitude
+};
+static const char *g_arduplane_mode_strings[] = {
+ "Manual",
+ "Circle",
+ "Stabilize",
+ "Training",
+ "Acro",
+ "Fly By Wire A",
+ "Fly By Wire B",
+ "Cruise",
+ "Autotune",
+ "Auto",
+ "RTL",
+ "Loiter",
+ "Takeoff",
+ "Avoid ADSB",
+ "Guided",
+ "Initialixing",
+ "QStabalize",
+ "QHover",
+ "QLoiter",
+ "QLand",
+ "QRTL",
+ "Qautune",
+ "QAcro"
+};
+
+class Label {
+public:
+
+  Label(const std::string &text, uint16_t x, uint16_t y, lv_obj_t *par = 0)
+    : m_x(x), m_y(y) {
+    lv_obj_t *parrent = par ? par : lv_scr_act();
+
+    m_label = lv_label_create(lv_scr_act(), NULL);
+    lv_label_set_align(m_label, LV_LABEL_ALIGN_LEFT);
+    lv_label_set_text(m_label, text.c_str());
+    lv_obj_align(m_label, NULL, LV_ALIGN_CENTER, x, y);
+
+    lv_style_copy(&m_style, &style);
+    //lv_style_set_text_font(&m_style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
+    lv_style_set_text_font(&m_style, LV_STATE_DEFAULT, &lv_font_montserrat_24);
+    lv_obj_add_style(m_label, LV_LABEL_PART_MAIN, &m_style);
+  }
+
+private:
+  uint16_t m_x;
+  uint16_t m_y;
+  lv_style_t m_style;
+  lv_obj_t *m_label;
+};
 
 // Images
+/*
 LV_IMG_DECLARE(attitude_background);
 static lv_obj_t *att_back_img;
-
-/**
- * Create a transparent canvas with Chroma keying and indexed color format (palette).
- */
-void osd(void) {
-
-  // Default style properties
-  static lv_style_t style;
-  lv_style_init(&style);
-  lv_style_set_bg_opa(&style, LV_STATE_DEFAULT, LV_OPA_TRANSP);
-  lv_style_set_bg_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
-  lv_style_set_bg_grad_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
-  lv_style_set_bg_grad_dir(&style, LV_STATE_DEFAULT, LV_GRAD_DIR_NONE);
-  lv_style_set_value_opa(&style, LV_STATE_DEFAULT, LV_OPA_COVER);
-  lv_style_set_value_color(&style, LV_STATE_DEFAULT, LV_COLOR_WHITE);
-  lv_style_set_text_font(&style, LV_STATE_DEFAULT, &lv_font_montserrat_16);
-
-  // Gauge properties
-  lv_style_set_bg_opa(&style, LV_GAUGE_PART_MAIN, 100);
-  lv_style_set_bg_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_bg_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_line_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
-  lv_style_set_scale_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_YELLOW);
-  lv_style_set_scale_end_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
-  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 2);
-  lv_style_set_scale_end_border_width(&style, LV_GAUGE_PART_MAIN, 0);
-  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
-  lv_style_set_border_width(&style, LV_GAUGE_PART_MAIN, 2);
-  lv_style_set_pad_inner(&style, LV_GAUGE_PART_MAIN, 15);
-  lv_style_set_pad_top(&style, LV_GAUGE_PART_MAIN, 5);
-  lv_style_set_pad_left(&style, LV_GAUGE_PART_MAIN, 5);
-  lv_style_set_pad_right(&style, LV_GAUGE_PART_MAIN, 5);
-  lv_style_set_text_font(&style, LV_GAUGE_PART_MAIN, &lv_font_montserrat_16);
-
-  // Line meter properties
-  lv_style_set_bg_opa(&style, LV_LINEMETER_PART_MAIN, 100);
-  lv_style_set_bg_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_bg_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_line_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_WHITE);
-  lv_style_set_scale_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_YELLOW);
-  lv_style_set_scale_end_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_RED);
-  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
-  lv_style_set_scale_end_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
-  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
-  lv_style_set_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
-  lv_style_set_pad_inner(&style, LV_LINEMETER_PART_MAIN, 15);
-  lv_style_set_pad_top(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_pad_left(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_pad_right(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_text_font(&style, LV_LINEMETER_PART_MAIN, &lv_font_montserrat_16);
-
-  // Label properties
-  lv_style_set_bg_opa(&style, LV_LABEL_PART_MAIN, LV_OPA_TRANSP);
-  lv_style_set_bg_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_bg_grad_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
-  lv_style_set_text_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
-  lv_style_set_pad_top(&style, LV_LABEL_PART_MAIN, 3);
-  lv_style_set_pad_bottom(&style, LV_LABEL_PART_MAIN, 3);
-  lv_style_set_pad_left(&style, LV_LABEL_PART_MAIN, 3);
-  lv_style_set_pad_right(&style, LV_LABEL_PART_MAIN, 3);
-  lv_style_set_border_width(&style, LV_LABEL_PART_MAIN, 0);
-
-  lv_obj_add_style(lv_scr_act(), LV_OBJ_PART_MAIN, &style);
-
-  // Copy the style for labels, but increase the font size
-  static lv_style_t label_style;
-  lv_style_copy(&label_style, &style);
-  lv_style_set_text_font(&label_style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
-
-  // Place the image
-  att_back_img = lv_img_create(lv_scr_act(), NULL);
-  lv_img_set_src(att_back_img, &attitude_background);
-  lv_obj_add_style(att_back_img, LV_IMG_PART_MAIN, &style);
-  lv_obj_align(att_back_img, NULL, LV_ALIGN_CENTER, 0, -200);
-  lv_img_set_pivot(att_back_img, attitude_background.header.w / 2, attitude_background.header.h / 2);
-
-  // Create a test label
-  label = lv_label_create(lv_scr_act(), NULL);
-  lv_label_set_align(label, LV_LABEL_ALIGN_RIGHT);
-  lv_label_set_text(label, "?");
-  lv_obj_add_style(label, LV_LABEL_PART_MAIN, &label_style);
-  lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
-
-
-  // Describe the color for the needles
-  static lv_color_t needle_colors[3];
-  needle_colors[0] = LV_COLOR_BLUE;
-  needle_colors[1] = LV_COLOR_ORANGE;
-  needle_colors[2] = LV_COLOR_PURPLE;
-  //LV_IMG_DECLARE(img_hand);
-
-  // Create a gauge
-  lv_obj_t * gauge1 = lv_gauge_create(lv_scr_act(), NULL);
-  lv_gauge_set_needle_count(gauge1, 3, needle_colors);
-  lv_obj_set_size(gauge1, 200, 200);
-  lv_obj_align(gauge1, NULL, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_add_style(gauge1, LV_OBJ_PART_MAIN, &style);
-
-  // Set the gague values
-  lv_gauge_set_value(gauge1, 0, 10);
-  lv_gauge_set_value(gauge1, 1, 20);
-  lv_gauge_set_value(gauge1, 2, 30);
-
-  // Create a line meter
-  lv_obj_t *lmeter = lv_linemeter_create(lv_scr_act(), NULL);
-  lv_obj_add_style(lmeter, LV_LINEMETER_PART_MAIN, &style);
-  lv_linemeter_set_range(lmeter, 0, 100);                   /*Set the range*/
-  lv_linemeter_set_value(lmeter, 80);                       /*Set the current value*/
-  lv_linemeter_set_scale(lmeter, 240, 21);                  /*Set the angle and number of lines*/
-  lv_obj_set_size(lmeter, 150, 150);
-  lv_obj_align(lmeter, NULL, LV_ALIGN_CENTER, -400, 0);
-
-  // Create an inner line meter
-  lv_obj_t *lmeter2 = lv_linemeter_create(lv_scr_act(), NULL);
-  lv_obj_add_style(lmeter2, LV_LINEMETER_PART_MAIN, &style);
-  lv_linemeter_set_range(lmeter2, 0, 100);                   /*Set the range*/
-  lv_linemeter_set_value(lmeter2, 80);                       /*Set the current value*/
-  lv_linemeter_set_scale(lmeter2, 240, 21);                  /*Set the angle and number of lines*/
-  lv_obj_set_size(lmeter2, 100, 100);
-  lv_obj_align(lmeter2, NULL, LV_ALIGN_CENTER, -400, 0);
-}
+LV_IMG_DECLARE(attitude_foreground);
+static lv_obj_t *att_fore_img;
+LV_IMG_DECLARE(attitude_ground);
+static lv_obj_t *att_ground_img;
+LV_IMG_DECLARE(attitude_ring);
+static lv_obj_t *att_ring_img;
+LV_IMG_DECLARE(home_arrow_ring);
+static lv_obj_t *home_arrow_img;
+LV_IMG_DECLARE(north_arrow_ring);
+static lv_obj_t *north_arrow_img;
+*/
+LV_IMG_DECLARE(satellite);
+LV_IMG_DECLARE(bat_full);
 
 /**
  * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics library
@@ -232,8 +195,197 @@ int main(int argv, char**argc) {
   /*Initialize the HAL for LittlevGL*/
   hal_init();
 
-  /* Create a Demo */
-  osd();
+  // Default style properties
+  static lv_style_t style;
+  lv_style_set_bg_opa(&style, LV_STATE_DEFAULT, LV_OPA_TRANSP);
+  lv_style_set_bg_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
+  lv_style_set_bg_grad_color(&style, LV_STATE_DEFAULT, LV_COLOR_TRANSP);
+  lv_style_set_bg_grad_dir(&style, LV_STATE_DEFAULT, LV_GRAD_DIR_NONE);
+  lv_style_set_value_opa(&style, LV_STATE_DEFAULT, LV_OPA_COVER);
+  lv_style_set_value_color(&style, LV_STATE_DEFAULT, LV_COLOR_WHITE);
+  lv_style_set_text_font(&style, LV_STATE_DEFAULT, &lv_font_montserrat_16);
+
+  // Gauge properties
+  lv_style_set_bg_opa(&style, LV_GAUGE_PART_MAIN, 100);
+  lv_style_set_bg_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_line_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_scale_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_YELLOW);
+  lv_style_set_scale_end_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_scale_end_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
+  lv_style_set_border_width(&style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_pad_inner(&style, LV_GAUGE_PART_MAIN, 15);
+  lv_style_set_pad_top(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_pad_left(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_pad_right(&style, LV_GAUGE_PART_MAIN, 5);
+  lv_style_set_text_font(&style, LV_GAUGE_PART_MAIN, &lv_font_montserrat_16);
+
+  // Line meter properties
+  lv_style_set_bg_opa(&style, LV_LINEMETER_PART_MAIN, 100);
+  lv_style_set_bg_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_line_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_scale_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_YELLOW);
+  lv_style_set_scale_end_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
+  lv_style_set_scale_end_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
+  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
+  lv_style_set_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
+  lv_style_set_pad_inner(&style, LV_LINEMETER_PART_MAIN, 15);
+  lv_style_set_pad_top(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_pad_left(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_pad_right(&style, LV_LINEMETER_PART_MAIN, 5);
+  lv_style_set_text_font(&style, LV_LINEMETER_PART_MAIN, &lv_font_montserrat_16);
+
+  // Label properties
+  lv_style_set_bg_opa(&style, LV_LABEL_PART_MAIN, LV_OPA_TRANSP);
+  lv_style_set_bg_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_bg_grad_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_text_color(&style, LV_LABEL_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_pad_top(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_bottom(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_left(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_pad_right(&style, LV_LABEL_PART_MAIN, 3);
+  lv_style_set_border_width(&style, LV_LABEL_PART_MAIN, 0);
+
+  // Container properties
+  lv_style_set_pad_inner(&style, LV_CONT_PART_MAIN, 0);
+  lv_style_set_pad_top(&style, LV_CONT_PART_MAIN, 0);
+  lv_style_set_pad_bottom(&style, LV_CONT_PART_MAIN, 0);
+  lv_style_set_pad_left(&style, LV_CONT_PART_MAIN, 0);
+  lv_style_set_pad_right(&style, LV_CONT_PART_MAIN, 0);
+  lv_style_set_border_width(&style, LV_CONT_PART_MAIN, 0);
+
+  // Image properties
+  lv_style_set_pad_inner(&style, LV_IMG_PART_MAIN, 0);
+  lv_style_set_pad_top(&style, LV_IMG_PART_MAIN, 0);
+  lv_style_set_pad_bottom(&style, LV_IMG_PART_MAIN, 0);
+  lv_style_set_pad_left(&style, LV_IMG_PART_MAIN, 0);
+  lv_style_set_pad_right(&style, LV_IMG_PART_MAIN, 0);
+
+  lv_obj_add_style(lv_scr_act(), LV_OBJ_PART_MAIN, &style);
+
+  // Copy the style for labels, but increase the font size
+  static lv_style_t label_style;
+  lv_style_copy(&label_style, &style);
+  lv_style_set_text_font(&label_style, LV_STATE_DEFAULT, &lv_font_montserrat_30);
+
+  // Create a small font for units, etc
+  static lv_style_t units_style;
+  lv_style_copy(&units_style, &label_style);
+  lv_style_set_text_font(&units_style, LV_STATE_DEFAULT, &lv_font_montserrat_14);
+
+  /***********************
+   * Create the GPS object
+   ***********************/
+
+  // Create the GPS group
+  lv_obj_t *gps_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(gps_group, true);
+  lv_obj_align_origo(gps_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(gps_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(gps_group, LV_LAYOUT_COLUMN_LEFT);
+  lv_obj_align(gps_group, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, -50, -10);
+  lv_obj_add_style(gps_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the satellite status group
+  lv_obj_t *gps_stats_group = lv_cont_create(gps_group, NULL);
+  lv_obj_set_auto_realign(gps_stats_group, true);
+  lv_obj_align_origo(gps_stats_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(gps_stats_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(gps_stats_group, LV_LAYOUT_ROW_BOTTOM);
+  lv_obj_align(gps_stats_group, gps_group, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
+  lv_obj_add_style(gps_stats_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the satellite icon
+  lv_obj_t *satellite_img = lv_img_create(gps_stats_group, NULL);
+  lv_img_set_src(satellite_img, &satellite);
+  lv_img_set_zoom(satellite_img, 100);
+  lv_obj_align(satellite_img, gps_stats_group, LV_ALIGN_IN_TOP_LEFT, 0, 0);
+  lv_obj_set_auto_realign(satellite_img, true);
+  lv_obj_add_style(satellite_img, LV_IMG_PART_MAIN, &style);
+
+  // Add the satellite status labels
+  lv_obj_t *sats_label = lv_label_create(gps_stats_group, NULL);
+  lv_label_set_align(sats_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(sats_label, satellite_img, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(sats_label, true);
+  lv_obj_t *nsats_label = lv_label_create(gps_stats_group, NULL);
+  lv_label_set_align(nsats_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(nsats_label, sats_label, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(nsats_label, true);
+  lv_obj_add_style(nsats_label, LV_LABEL_PART_MAIN, &units_style);
+  lv_label_set_text(nsats_label, "SATS");
+  lv_obj_t *hdop_label = lv_label_create(gps_stats_group, NULL);
+  lv_label_set_align(hdop_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(hdop_label, nsats_label, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(hdop_label, true);
+  lv_obj_t *hdopl_label = lv_label_create(gps_stats_group, NULL);
+  lv_label_set_align(hdopl_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(hdopl_label, hdop_label, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(hdopl_label, true);
+  lv_obj_add_style(hdopl_label, LV_LABEL_PART_MAIN, &units_style);
+  lv_label_set_text(hdopl_label, "HDOP");
+
+  // Add the latitude label
+  lv_obj_t *lat_label = lv_label_create(gps_group, NULL);
+  lv_label_set_align(lat_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(lat_label, sats_label, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(lat_label, true);
+
+  // Add the longitude label
+  lv_obj_t *lon_label = lv_label_create(gps_group, NULL);
+  lv_label_set_align(lon_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(lon_label, lat_label, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(lon_label, true);
+
+  // Create the battery group
+  lv_obj_t *bat_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(bat_group, true);
+  lv_obj_align_origo(bat_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(bat_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(bat_group, LV_LAYOUT_ROW_MID);
+  lv_obj_align(bat_group, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 25, -10);
+  lv_obj_add_style(bat_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Create the vertical battery group
+  lv_obj_t *batv_group = lv_cont_create(bat_group, NULL);
+  lv_obj_set_auto_realign(batv_group, true);
+  lv_obj_align_origo(batv_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(batv_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(batv_group, LV_LAYOUT_COLUMN_RIGHT);
+  lv_obj_align(batv_group, gps_group, LV_ALIGN_OUT_BOTTOM_MID, 0, 0);
+  lv_obj_add_style(batv_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Create the battery labels
+  lv_obj_t *volt_label = lv_label_create(batv_group, NULL);
+  lv_label_set_align(volt_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(volt_label, batv_group, LV_ALIGN_IN_TOP_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(volt_label, true);
+  lv_obj_t *cur_label = lv_label_create(batv_group, NULL);
+  lv_label_set_align(cur_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(cur_label, batv_group, LV_ALIGN_OUT_BOTTOM_RIGHT, 0, 0);
+  lv_obj_set_auto_realign(cur_label, true);
+
+  // Add the battery icon
+  lv_obj_t *bat_img = lv_img_create(bat_group, NULL);
+  lv_img_set_src(bat_img, &bat_full);
+  lv_obj_align(bat_img, volt_label, LV_ALIGN_IN_RIGHT_MID, 100, 100);
+  lv_obj_set_auto_realign(bat_img, true);
+
+  // Add the flight mode label
+  lv_obj_t *mode_label = lv_label_create(lv_scr_act(), NULL);
+  lv_label_set_align(mode_label, LV_LABEL_ALIGN_CENTER);
+  lv_obj_align(mode_label, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, -10);
+  lv_obj_set_auto_realign(mode_label, true);
+
+  // Increase the font size of the mode string
+  static lv_style_t mode_style;
+  lv_style_copy(&mode_style, &label_style);
+  lv_style_set_text_font(&mode_style, LV_STATE_DEFAULT, &lv_font_montserrat_40);
+  lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
 
   /* Handle LitlevGL tasks (tickless mode) */
   uint8_t cntr = 0;
@@ -246,11 +398,67 @@ int main(int argv, char**argc) {
 #endif
     usleep(5000);
     if (++cntr == 20) {
+#if 0
       lv_label_set_text_fmt(label, "Countdown: %d", cntr2);
       lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
       lv_img_set_angle(att_back_img, cntr2 * 360);
+#endif
       cntr = 0;
       ++cntr2;
+
+      // Get the geo coordinates from the telemetry
+      float latitude = 0;
+      float longitude = 0;
+      telem.get_value("latitude", latitude);
+      telem.get_value("longitude", longitude);
+      float deg = fabs(std::max(std::min(latitude, 90.0F), -90.0F));
+      int32_t deg_int = static_cast<int32_t>(fabs(deg));
+      float min = (deg - static_cast<float>(deg_int)) * 60.0;
+      int32_t min_int = static_cast<int32_t>(fabs(min));
+      float sec = fabs((min - static_cast<float>(min_int)) * 60.0);
+      int8_t geo_x = -10;
+      char NS = (latitude < 0) ? 'S' : 'N';
+      lv_label_set_text_fmt(lat_label, "%3d %2d %5.1f %c deg", deg_int, min_int, sec, NS);
+      deg = fabs(std::max(std::min(longitude, 180.0F), -180.0F));
+      deg_int = static_cast<int32_t>(deg);
+      min = (deg - static_cast<float>(deg_int)) * 60.0;
+      min_int = static_cast<int32_t>(fabs(min));
+      sec = fabs((min - static_cast<float>(min_int)) * 60.0);
+      char EW = ((longitude < 0) ? 'W' : 'E');
+      lv_label_set_text_fmt(lon_label, "%3d %2d %5.1f %c deg", deg_int, min_int, sec, EW);
+
+      // Set the battery status text
+      float remain = 75;
+      int temp_bat = 0;
+      if (telem.get_value("battery_remaining", remain) && (remain < 30)) {
+        temp_bat = 1;
+      }
+      if (telem.get_value("battery_remaining", remain) && (remain < 15)) {
+        temp_bat = 2;
+      }
+      float voltage = 11.9;
+      telem.get_value("voltage_battery", voltage);
+      lv_label_set_text_fmt(volt_label, "%4.1f V", voltage);
+      float current = 10.2;
+      telem.get_value("current_battery", current);
+      lv_label_set_text_fmt(cur_label, "%4.1f A", current);
+
+      // Set the mode text.
+      float mode_val = 0;
+      if (!telem.get_value("mode", mode_val)) {
+        mode_val = 0;
+      }
+      uint32_t mode = static_cast<uint32_t>(mode_val);
+      lv_label_set_text(mode_label, g_arducopter_mode_strings[mode]);
+
+      // Set the GPS stats
+      float sats_vis = 10;
+      float hdop = 12.3;
+      telem.get_value("gps_num_sats", sats_vis);
+      telem.get_value("gps_HDOP", hdop);
+      // sats_vis < 8  sats_vis < 6   hdop > 15  hdop > 9
+      lv_label_set_text_fmt(sats_label, "%2d", int(sats_vis + 0.5));
+      lv_label_set_text_fmt(hdop_label, "%5.1f", hdop);
     }
   }
 

@@ -28,5 +28,16 @@ else (WIN32)
 endif (WIN32)
 pkg_search_module(SDL2 REQUIRED sdl2)
 include_directories(${SDL2_INCLUDE_DIRS})
-add_executable(lvgl_osd lvgl_osd.cc telemetry.cc attitude_background.c img_hand.c ${SOURCES} ${INCLUDES})
+add_executable(lvgl_osd
+  lvgl_osd.cc
+  telemetry.cc
+  attitude_background.c
+  attitude_foreground.c
+  attitude_ground.c
+  attitude_ring.c
+  home_arrow_ring.c
+  north_arrow_ring.c
+  satellite.c
+  bat_full.c
+  ${SOURCES} ${INCLUDES})
 target_link_libraries(lvgl_osd PRIVATE ${EXTRA_LIBS})
