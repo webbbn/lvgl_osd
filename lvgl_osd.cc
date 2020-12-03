@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 
+#include <cmath>
+
 #include "telemetry.hh"
 #include "lvgl/lvgl.h"
 #if defined(WIN32)
