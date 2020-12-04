@@ -100,20 +100,6 @@ private:
 };
 
 // Images
-/*
-LV_IMG_DECLARE(attitude_background);
-static lv_obj_t *att_back_img;
-LV_IMG_DECLARE(attitude_foreground);
-static lv_obj_t *att_fore_img;
-LV_IMG_DECLARE(attitude_ground);
-static lv_obj_t *att_ground_img;
-LV_IMG_DECLARE(attitude_ring);
-static lv_obj_t *att_ring_img;
-LV_IMG_DECLARE(home_arrow_ring);
-static lv_obj_t *home_arrow_img;
-LV_IMG_DECLARE(north_arrow_ring);
-static lv_obj_t *north_arrow_img;
-*/
 LV_IMG_DECLARE(satellite);
 LV_IMG_DECLARE(bat_full);
 LV_IMG_DECLARE(bat_0);
@@ -130,6 +116,7 @@ LV_IMG_DECLARE(sig_5);
 LV_IMG_DECLARE(sig_6);
 LV_IMG_DECLARE(north_needle);
 LV_IMG_DECLARE(compass);
+LV_IMG_DECLARE(home_arrow);
 
 /**
  * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics library
@@ -361,6 +348,21 @@ int main(int argv, char**argc) {
   lv_obj_align(compass_img, compass_group, LV_ALIGN_CENTER, 0, 0);
   lv_obj_set_auto_realign(compass_img, true);
   lv_obj_add_style(compass_img, LV_IMG_PART_MAIN, &style);
+
+  // Add the rssi label
+  lv_obj_t *orientation_label = lv_label_create(compass_img, NULL);
+  lv_label_set_align(orientation_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(orientation_label, compass_img, LV_ALIGN_CENTER, 0, 40);
+  lv_obj_set_auto_realign(orientation_label, true);
+  lv_obj_add_style(orientation_label, LV_LABEL_PART_MAIN, &label_style);
+
+  // Create the home arrow image
+  lv_obj_t *home_img = lv_img_create(compass_img, NULL);
+  lv_img_set_src(home_img, &home_arrow);
+  lv_img_set_zoom(home_img, 128);
+  lv_obj_align(home_img, compass_img, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_set_auto_realign(home_img, true);
+  lv_obj_add_style(home_img, LV_IMG_PART_MAIN, &style);
 
   /*******************************
    * Create the rssi gague
@@ -597,12 +599,15 @@ int main(int argv, char**argc) {
             break;
           case 2:
             lv_img_set_src(bat_img, &bat_2);
+            lv_obj_set_hidden(bat_img, false);
             break;
           case 3:
             lv_img_set_src(bat_img, &bat_3);
+            lv_obj_set_hidden(bat_img, false);
             break;
           default:
             lv_img_set_src(bat_img, &bat_4);
+            lv_obj_set_hidden(bat_img, false);
             break;
         }
         prev_bat_level = bat_level;
@@ -626,13 +631,77 @@ int main(int argv, char**argc) {
       lv_label_set_text(mode_label, g_arducopter_mode_strings[mode]);
 
       // Set the GPS stats
-      float sats_vis = 10;
-      float hdop = 12.3;
+      float sats_vis = 0;
+      float hdop = 0;
       telem.get_value("gps_num_sats", sats_vis);
       telem.get_value("gps_HDOP", hdop);
       // sats_vis < 8  sats_vis < 6   hdop > 15  hdop > 9
       lv_label_set_text_fmt(sats_label, "%2d", int(sats_vis + 0.5));
       lv_label_set_text_fmt(hdop_label, "%5.1f", hdop);
+      uint8_t gps_error_level = 0;
+      if (sats_vis < 5) {
+        lv_obj_set_style_local_text_color(sats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_RED);
+        lv_obj_set_style_local_text_color(nsats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_RED);
+        gps_error_level = 2;
+      } else if (sats_vis < 8) {
+        lv_obj_set_style_local_text_color(sats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_YELLOW);
+        lv_obj_set_style_local_text_color(nsats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_YELLOW);
+        gps_error_level = 1;
+      } else {
+        lv_obj_set_style_local_text_color(sats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_WHITE);
+        lv_obj_set_style_local_text_color(nsats_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_WHITE);
+      }
+      if (hdop > 15) {
+        lv_obj_set_style_local_text_color(hdop_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_RED);
+        lv_obj_set_style_local_text_color(hdopl_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_RED);
+        gps_error_level = 2;
+      } else if (hdop > 9) {
+        lv_obj_set_style_local_text_color(hdop_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_YELLOW);
+        lv_obj_set_style_local_text_color(hdopl_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_YELLOW);
+        gps_error_level = (gps_error_level == 2) ? 2 : 1;
+      } else {
+        lv_obj_set_style_local_text_color(hdop_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_WHITE);
+        lv_obj_set_style_local_text_color(hdopl_label, LV_LABEL_PART_MAIN, LV_STATE_DEFAULT,
+                                          LV_COLOR_WHITE);
+      }
+      switch (gps_error_level) {
+      case 2:
+        if (blink_on) {
+          lv_obj_set_style_local_image_recolor_opa(satellite_img, LV_IMG_PART_MAIN,
+                                                   LV_STATE_DEFAULT, LV_OPA_COVER);
+          lv_obj_set_style_local_image_recolor(satellite_img, LV_IMG_PART_MAIN,
+                                               LV_STATE_DEFAULT, LV_COLOR_RED);
+        } else {
+          lv_obj_set_style_local_image_recolor_opa(satellite_img, LV_IMG_PART_MAIN,
+                                                   LV_STATE_DEFAULT, LV_OPA_COVER);
+          lv_obj_set_style_local_image_recolor(satellite_img, LV_IMG_PART_MAIN,
+                                               LV_STATE_DEFAULT, LV_COLOR_WHITE);
+        }
+        break;
+      case 1:
+        lv_obj_set_style_local_image_recolor_opa(satellite_img, LV_IMG_PART_MAIN,
+                                                 LV_STATE_DEFAULT, LV_OPA_COVER);
+        lv_obj_set_style_local_image_recolor(satellite_img, LV_IMG_PART_MAIN,
+                                             LV_STATE_DEFAULT, LV_COLOR_YELLOW);
+        break;
+      default:
+        lv_obj_set_style_local_image_recolor_opa(satellite_img, LV_IMG_PART_MAIN,
+                                                 LV_STATE_DEFAULT, LV_OPA_COVER);
+        lv_obj_set_style_local_image_recolor(satellite_img, LV_IMG_PART_MAIN,
+                                             LV_STATE_DEFAULT, LV_COLOR_GREEN);
+        break;
+      }
 
       // Set the downlink stats
       float rx_rssi = 0;
@@ -654,8 +723,12 @@ int main(int argv, char**argc) {
       lv_gauge_set_value(video_gauge, 1, int(rint(rx_video_bad_blocks / rx_video_packet_count)));
 
       float heading = 0;
+      float home_direction = 90.0;
       telem.get_value("heading", heading);
+      telem.get_value("home_direction", home_direction);
       lv_img_set_angle(compass_img, (360.0 - heading) * 10);
+      lv_label_set_text_fmt(orientation_label, "%5.1f", heading);
+      lv_img_set_angle(home_img, home_direction * 10);
     }
   }
 

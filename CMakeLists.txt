@@ -52,5 +52,6 @@ add_executable(lvgl_osd
   sig_5.c
   sig_6.c
   compass.c
+  home_arrow.c
   ${SOURCES} ${INCLUDES})
 target_link_libraries(lvgl_osd PRIVATE ${EXTRA_LIBS})
