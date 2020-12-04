@@ -277,60 +277,6 @@ int main(int argv, char**argc) {
   lv_style_copy(&units_style, &label_style);
   lv_style_set_text_font(&units_style, LV_STATE_DEFAULT, &lv_font_montserrat_14);
 
-
-  /*********************************
-   * Create the signal quality group
-   *********************************/
-
-  // Create the signal strength down group
-  lv_obj_t *sigdown_group = lv_cont_create(lv_scr_act(), NULL);
-  lv_obj_set_auto_realign(sigdown_group, true);
-  lv_obj_align_origo(sigdown_group, NULL, LV_ALIGN_CENTER, 0, 0);
-  lv_cont_set_fit(sigdown_group, LV_FIT_TIGHT);
-  lv_cont_set_layout(sigdown_group, LV_LAYOUT_COLUMN_LEFT);
-  lv_obj_align(sigdown_group, NULL, LV_ALIGN_IN_TOP_LEFT, 50, 30);
-  lv_obj_add_style(sigdown_group, LV_LABEL_PART_MAIN, &label_style);
-
-  // Add the rssi down group
-  lv_obj_t *rssi_down_group = lv_cont_create(sigdown_group, NULL);
-  lv_obj_set_auto_realign(rssi_down_group, true);
-  lv_obj_align_origo(rssi_down_group, NULL, LV_ALIGN_CENTER, 0, 0);
-  lv_cont_set_fit(rssi_down_group, LV_FIT_TIGHT);
-  lv_cont_set_layout(rssi_down_group, LV_LAYOUT_ROW_BOTTOM);
-  lv_obj_align(rssi_down_group, sigdown_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-  lv_obj_add_style(rssi_down_group, LV_LABEL_PART_MAIN, &label_style);
-
-  // Add the rssi down icon
-  lv_obj_t *rssi_down_img = lv_img_create(rssi_down_group, NULL);
-  lv_img_set_src(rssi_down_img, &sig_0);
-  lv_obj_align(rssi_down_img, rssi_down_group, LV_ALIGN_IN_TOP_LEFT, 0, 0);
-  lv_obj_set_auto_realign(rssi_down_img, true);
-  lv_obj_add_style(rssi_down_img, LV_IMG_PART_MAIN, &style);
-
-  // Add the rssi down value label
-  lv_obj_t *rssi_down_label = lv_label_create(rssi_down_group, NULL);
-  lv_label_set_align(rssi_down_label, LV_LABEL_ALIGN_RIGHT);
-  lv_obj_align(rssi_down_label, rssi_down_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
-  lv_obj_set_auto_realign(rssi_down_label, true);
-  lv_obj_t *dbm_down_label = lv_label_create(rssi_down_group, NULL);
-  lv_label_set_align(dbm_down_label, LV_LABEL_ALIGN_RIGHT);
-  lv_obj_align(dbm_down_label, rssi_down_label, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
-  lv_obj_set_auto_realign(dbm_down_label, true);
-  lv_obj_add_style(dbm_down_label, LV_LABEL_PART_MAIN, &units_style);
-  lv_label_set_text(dbm_down_label, "dbm " LV_SYMBOL_DOWN);
-
-  // Add the bitrate label
-  lv_obj_t *rx_bitrate_label = lv_label_create(sigdown_group, NULL);
-  lv_label_set_align(rx_bitrate_label, LV_LABEL_ALIGN_RIGHT);
-  lv_obj_align(rx_bitrate_label, sigdown_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
-  lv_obj_set_auto_realign(rx_bitrate_label, true);
-
-  // Add the video stats label
-  lv_obj_t *rx_video_stats_label = lv_label_create(sigdown_group, NULL);
-  lv_label_set_align(rx_video_stats_label, LV_LABEL_ALIGN_RIGHT);
-  lv_obj_align(rx_video_stats_label, sigdown_group, LV_ALIGN_OUT_TOP_RIGHT, 0, 0);
-  lv_obj_set_auto_realign(rx_video_stats_label, true);
-
   /*******************************
    * Create the video stats gague
    *******************************/
@@ -340,7 +286,7 @@ int main(int argv, char**argc) {
   lv_obj_set_auto_realign(video_group, true);
   lv_obj_align_origo(video_group, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_cont_set_fit(video_group, LV_FIT_TIGHT);
-  lv_cont_set_layout(video_group, LV_LAYOUT_COLUMN_LEFT);
+  lv_cont_set_layout(video_group, LV_LAYOUT_COLUMN_MID);
   lv_obj_align(video_group, NULL, LV_ALIGN_IN_TOP_MID, -200, 10);
   lv_obj_add_style(video_group, LV_GAUGE_PART_MAJOR, &style);
   lv_obj_add_style(video_group, LV_GAUGE_PART_MAIN, &style);
@@ -359,11 +305,33 @@ int main(int argv, char**argc) {
   lv_obj_t *video_gauge = lv_gauge_create(video_group, NULL);
   lv_gauge_set_needle_count(video_gauge, 2, video_needle_colors);
   lv_obj_set_size(video_gauge, 150, 150);
-  lv_obj_align(video_gauge, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_align(video_gauge, video_group, LV_ALIGN_CENTER, 0, 0);
   lv_gauge_set_range(video_gauge, 0, 20);
   lv_gauge_set_critical_value(video_gauge, 15);
   lv_obj_add_style(video_gauge, LV_GAUGE_PART_MAJOR, &video_style);
   lv_obj_add_style(video_gauge, LV_GAUGE_PART_MAIN, &video_style);
+
+  // Add the bitrate down group
+  lv_obj_t *bitrate_down_group = lv_cont_create(video_group, NULL);
+  lv_obj_set_auto_realign(bitrate_down_group, true);
+  lv_cont_set_fit(bitrate_down_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(bitrate_down_group, LV_LAYOUT_ROW_BOTTOM);
+  lv_obj_align(bitrate_down_group, video_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_add_style(bitrate_down_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the bitrate label
+  lv_obj_t *rx_bitrate_label = lv_label_create(bitrate_down_group, NULL);
+  lv_label_set_align(rx_bitrate_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rx_bitrate_label, bitrate_down_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_set_auto_realign(rx_bitrate_label, true);
+
+  // Add the Mbps label
+  lv_obj_t *rx_mbps_label = lv_label_create(bitrate_down_group, NULL);
+  lv_label_set_align(rx_mbps_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rx_mbps_label, rx_bitrate_label, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_set_auto_realign(rx_mbps_label, true);
+  lv_obj_add_style(rx_mbps_label, LV_LABEL_PART_MAIN, &units_style);
+  lv_label_set_text(rx_mbps_label, "Mbps " LV_SYMBOL_DOWN);
 
   /******************************
    * Create the compass gauge
@@ -427,6 +395,28 @@ int main(int argv, char**argc) {
   lv_gauge_set_critical_value(rssi_gauge, -75);
   lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAJOR, &rssi_style);
   lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAIN, &rssi_style);
+
+  // Add the rssi down group
+  lv_obj_t *rssi_down_group = lv_cont_create(rssi_group, NULL);
+  lv_obj_set_auto_realign(rssi_down_group, true);
+  lv_cont_set_fit(rssi_down_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(rssi_down_group, LV_LAYOUT_ROW_BOTTOM);
+  lv_obj_align(rssi_down_group, rssi_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_add_style(rssi_down_group, LV_LABEL_PART_MAIN, &label_style);
+
+  // Add the rssi label
+  lv_obj_t *rssi_down_label = lv_label_create(rssi_down_group, NULL);
+  lv_label_set_align(rssi_down_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rssi_down_label, rssi_down_group, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_set_auto_realign(rssi_down_label, true);
+
+  // Add the dbm label
+  lv_obj_t *rx_dbm_label = lv_label_create(rssi_down_group, NULL);
+  lv_label_set_align(rx_dbm_label, LV_LABEL_ALIGN_RIGHT);
+  lv_obj_align(rx_dbm_label, rssi_down_label, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+  lv_obj_set_auto_realign(rx_dbm_label, true);
+  lv_obj_add_style(rx_dbm_label, LV_LABEL_PART_MAIN, &units_style);
+  lv_label_set_text(rx_dbm_label, "dBm" LV_SYMBOL_DOWN);
 
   /***********************
    * Create the GPS object
@@ -622,34 +612,21 @@ int main(int argv, char**argc) {
       // Set the downlink stats
       float rx_rssi = 0;
       float rx_video_packet_count = 0;
-      float rx_video_bitrate = 8347837.5;
+      float rx_video_rssi = 8347837.5;
       float rx_video_dropped_packets = 10;
       float rx_video_bad_blocks = 99;
+      float rx_video_bitrate = 10.2;
       telem.get_value("rx_video_rssi", rx_rssi);
       telem.get_value("rx_video_packet_count", rx_video_packet_count);
       telem.get_value("rx_video_bitrate", rx_video_bitrate);
       telem.get_value("rx_video_dropped_packets", rx_video_dropped_packets);
       telem.get_value("rx_video_bad_blocks", rx_video_bad_blocks);
       lv_label_set_text_fmt(rssi_down_label, "%6.1f", rx_rssi);
-      lv_label_set_text_fmt(rx_bitrate_label, "%4.1f Mbps",
+      lv_label_set_text_fmt(rx_bitrate_label, "%4.1f",
                             rx_video_bitrate * 1e-6);
-      lv_label_set_text_fmt(rx_video_stats_label, "%5d/%3d/%2d",
-                            rx_video_packet_count, rx_video_dropped_packets, rx_video_bad_blocks);
-      if (rx_rssi < -85) {
-        lv_img_set_src(rssi_down_img, &sig_0);
-      } else if (rx_rssi < -70) {
-        lv_img_set_src(rssi_down_img, &sig_1);
-      } else if (rx_rssi < -60) {
-        lv_img_set_src(rssi_down_img, &sig_2);
-      } else if (rx_rssi < -50) {
-        lv_img_set_src(rssi_down_img, &sig_3);
-      } else if (rx_rssi < -40) {
-        lv_img_set_src(rssi_down_img, &sig_4);
-      } else if (rx_rssi < -30) {
-        lv_img_set_src(rssi_down_img, &sig_5);
-      } else if (rx_rssi < -20) {
-        lv_img_set_src(rssi_down_img, &sig_6);
-      }
+      lv_gauge_set_value(rssi_gauge, 0, rx_rssi);
+      lv_gauge_set_value(video_gauge, 0, int(rint(rx_video_dropped_packets / rx_video_packet_count)));
+      lv_gauge_set_value(video_gauge, 1, int(rint(rx_video_bad_blocks / rx_video_packet_count)));
     }
   }
 
