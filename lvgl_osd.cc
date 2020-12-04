@@ -392,7 +392,7 @@ int main(int argv, char**argc) {
   lv_obj_set_size(rssi_gauge, 150, 150);
   lv_obj_align(rssi_gauge, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_gauge_set_range(rssi_gauge, -100, 0);
-  lv_gauge_set_critical_value(rssi_gauge, -75);
+  lv_gauge_set_critical_value(rssi_gauge, -80);
   lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAJOR, &rssi_style);
   lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAIN, &rssi_style);
 
@@ -627,6 +627,10 @@ int main(int argv, char**argc) {
       lv_gauge_set_value(rssi_gauge, 0, rx_rssi);
       lv_gauge_set_value(video_gauge, 0, int(rint(rx_video_dropped_packets / rx_video_packet_count)));
       lv_gauge_set_value(video_gauge, 1, int(rint(rx_video_bad_blocks / rx_video_packet_count)));
+
+      float heading = 0;
+      telem.get_value("heading", heading);
+      lv_img_set_angle(compass_img, (360.0 - heading) * 10);
     }
   }
 
