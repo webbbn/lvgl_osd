@@ -220,9 +220,13 @@ int main(int argv, char**argc) {
   lv_style_set_bg_opa(&style, LV_GAUGE_PART_MAIN, LV_OPA_COVER);
   lv_style_set_bg_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
   lv_style_set_bg_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_BLACK);
+  lv_style_set_line_width(&style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_line_width(&style, LV_GAUGE_PART_MAJOR, 4);
   lv_style_set_line_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
   lv_style_set_scale_grad_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
   lv_style_set_scale_end_color(&style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_end_line_width(&style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_scale_end_line_width(&style, LV_GAUGE_PART_MAJOR, 4);
   lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAIN, 0);
   lv_style_set_scale_border_width(&style, LV_GAUGE_PART_MAJOR, 2);
   lv_style_set_scale_end_border_width(&style, LV_GAUGE_PART_MAIN, 0);
@@ -234,40 +238,6 @@ int main(int argv, char**argc) {
   lv_style_set_pad_right(&style, LV_GAUGE_PART_MAIN, 5);
   lv_style_set_text_font(&style, LV_GAUGE_PART_MAJOR, &lv_font_montserrat_14);
   lv_style_set_text_font(&style, LV_GAUGE_PART_MAIN, &lv_font_montserrat_14);
-
-#if 0
-  lv_style_set_line_color(&compass_style, LV_GAUGE_PART_MAJOR, LV_COLOR_RED);
-  lv_style_set_scale_grad_color(&compass_style, LV_GAUGE_PART_MAJOR, LV_COLOR_RED);
-  lv_style_set_scale_end_color(&compass_style, LV_GAUGE_PART_MAJOR, LV_COLOR_WHITE);
-  lv_style_set_scale_end_border_width(&compass_style, LV_GAUGE_PART_MAJOR, 0);
-  lv_style_set_scale_border_width(&compass_style, LV_GAUGE_PART_MAJOR, 0);
-  lv_style_set_scale_border_width(&compass_style, LV_GAUGE_PART_MAIN, 2);
-  lv_style_set_scale_end_border_width(&compass_style, LV_GAUGE_PART_MAIN, 0);
-  lv_style_set_scale_border_width(&compass_style, LV_GAUGE_PART_MAIN, 0);
-  lv_style_set_border_width(&compass_style, LV_GAUGE_PART_MAIN, 2);
-  lv_style_set_pad_inner(&compass_style, LV_GAUGE_PART_MAIN, 15);
-  lv_style_set_pad_top(&compass_style, LV_GAUGE_PART_MAIN, 5);
-  lv_style_set_pad_left(&compass_style, LV_GAUGE_PART_MAIN, 5);
-  lv_style_set_pad_right(&compass_style, LV_GAUGE_PART_MAIN, 5);
-#endif
-
-  // Line meter properties
-  lv_style_set_bg_opa(&style, LV_LINEMETER_PART_MAIN, 100);
-  lv_style_set_bg_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_bg_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_BLACK);
-  lv_style_set_line_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_WHITE);
-  lv_style_set_line_width(&style, LV_LINEMETER_PART_MAIN, 2);
-  //lv_style_set_scale_grad_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_YELLOW);
-  lv_style_set_scale_end_color(&style, LV_LINEMETER_PART_MAIN, LV_COLOR_RED);
-  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
-  lv_style_set_scale_end_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
-  lv_style_set_scale_border_width(&style, LV_LINEMETER_PART_MAIN, 0);
-  lv_style_set_border_width(&style, LV_LINEMETER_PART_MAIN, 2);
-  lv_style_set_pad_inner(&style, LV_LINEMETER_PART_MAIN, 15);
-  lv_style_set_pad_top(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_pad_left(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_pad_right(&style, LV_LINEMETER_PART_MAIN, 5);
-  lv_style_set_text_font(&style, LV_LINEMETER_PART_MAIN, &lv_font_montserrat_12);
 
   // Label properties
   lv_style_set_bg_opa(&style, LV_LABEL_PART_MAIN, LV_OPA_TRANSP);
@@ -376,23 +346,87 @@ int main(int argv, char**argc) {
   lv_obj_add_style(video_group, LV_GAUGE_PART_MAIN, &style);
 
   // Create a custom style for the video gague
-  static lv_style_t video_style;
+  lv_style_t video_style;
   lv_style_copy(&video_style, &style);
   lv_style_set_pad_inner(&video_style, LV_GAUGE_PART_MAIN, 10);
 
   // Describe the color for the needles
-  static lv_color_t needle_colors[2];
-  needle_colors[0] = LV_COLOR_YELLOW;
-  needle_colors[1] = LV_COLOR_RED;
+  lv_color_t video_needle_colors[2];
+  video_needle_colors[0] = LV_COLOR_YELLOW;
+  video_needle_colors[1] = LV_COLOR_RED;
 
   // Create the video guage
   lv_obj_t *video_gauge = lv_gauge_create(video_group, NULL);
-  lv_gauge_set_needle_count(video_gauge, 2, needle_colors);
+  lv_gauge_set_needle_count(video_gauge, 2, video_needle_colors);
   lv_obj_set_size(video_gauge, 150, 150);
   lv_obj_align(video_gauge, NULL, LV_ALIGN_CENTER, 0, 0);
   lv_gauge_set_range(video_gauge, 0, 20);
+  lv_gauge_set_critical_value(video_gauge, 15);
   lv_obj_add_style(video_gauge, LV_GAUGE_PART_MAJOR, &video_style);
   lv_obj_add_style(video_gauge, LV_GAUGE_PART_MAIN, &video_style);
+
+  /******************************
+   * Create the compass gauge
+   ******************************/
+
+  // Create the top-level compass group
+  lv_obj_t *compass_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(compass_group, true);
+  lv_obj_align_origo(compass_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(compass_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(compass_group, LV_LAYOUT_COLUMN_LEFT);
+  lv_obj_align(compass_group, NULL, LV_ALIGN_IN_TOP_MID, 0, -90);
+  lv_obj_add_style(compass_group, LV_GAUGE_PART_MAIN, &style);
+
+  // Create the compass image
+  lv_obj_t *compass_img = lv_img_create(compass_group, NULL);
+  lv_img_set_src(compass_img, &compass);
+  lv_img_set_zoom(compass_img, 128);
+  lv_obj_align(compass_img, compass_group, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_set_auto_realign(compass_img, true);
+  lv_obj_add_style(compass_img, LV_IMG_PART_MAIN, &style);
+
+  /*******************************
+   * Create the rssi gague
+   *******************************/
+
+  // Create a custom style for the rssi gauge
+  lv_style_t rssi_style;
+  lv_style_copy(&rssi_style, &style);
+  lv_style_set_pad_inner(&rssi_style, LV_GAUGE_PART_MAIN, 10);
+  lv_style_set_line_color(&rssi_style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_line_color(&rssi_style, LV_GAUGE_PART_MAJOR, LV_COLOR_RED);
+  lv_style_set_scale_grad_color(&rssi_style, LV_GAUGE_PART_MAIN, LV_COLOR_RED);
+  lv_style_set_scale_grad_color(&rssi_style, LV_GAUGE_PART_MAJOR, LV_COLOR_RED);
+  lv_style_set_scale_end_color(&rssi_style, LV_GAUGE_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_scale_end_color(&rssi_style, LV_GAUGE_PART_MAJOR, LV_COLOR_WHITE);
+  lv_style_set_line_width(&rssi_style, LV_GAUGE_PART_MAIN, 2);
+  lv_style_set_line_width(&rssi_style, LV_GAUGE_PART_MAJOR, 4);
+
+  // Create the rssi stats group
+  lv_obj_t *rssi_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(rssi_group, true);
+  lv_obj_align_origo(rssi_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(rssi_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(rssi_group, LV_LAYOUT_COLUMN_LEFT);
+  lv_obj_align(rssi_group, NULL, LV_ALIGN_IN_TOP_MID, 200, 10);
+  lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAJOR, &rssi_style);
+  lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAIN, &rssi_style);
+
+  // Describe the color for the needles
+  lv_color_t rssi_needle_colors[2];
+  rssi_needle_colors[0] = LV_COLOR_YELLOW;
+  rssi_needle_colors[1] = LV_COLOR_RED;
+
+  // Create the rssi guage
+  lv_obj_t *rssi_gauge = lv_gauge_create(rssi_group, NULL);
+  lv_gauge_set_needle_count(rssi_gauge, 2, rssi_needle_colors);
+  lv_obj_set_size(rssi_gauge, 150, 150);
+  lv_obj_align(rssi_gauge, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_gauge_set_range(rssi_gauge, -100, 0);
+  lv_gauge_set_critical_value(rssi_gauge, -75);
+  lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAJOR, &rssi_style);
+  lv_obj_add_style(rssi_gauge, LV_GAUGE_PART_MAIN, &rssi_style);
 
   /***********************
    * Create the GPS object
@@ -511,27 +545,6 @@ int main(int argv, char**argc) {
   lv_style_copy(&mode_style, &label_style);
   lv_style_set_text_font(&mode_style, LV_STATE_DEFAULT, &lv_font_montserrat_40);
   lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
-
-  /******************************
-   * Create the compass gauge
-   ******************************/
-
-  // Create the top-level compass group
-  lv_obj_t *compass_group = lv_cont_create(lv_scr_act(), NULL);
-  lv_obj_set_auto_realign(compass_group, true);
-  lv_obj_align_origo(compass_group, NULL, LV_ALIGN_CENTER, 0, 0);
-  lv_cont_set_fit(compass_group, LV_FIT_TIGHT);
-  lv_cont_set_layout(compass_group, LV_LAYOUT_COLUMN_LEFT);
-  lv_obj_align(compass_group, NULL, LV_ALIGN_IN_TOP_MID, 0, -90);
-  lv_obj_add_style(compass_group, LV_GAUGE_PART_MAIN, &style);
-
-  // Create the compass image
-  lv_obj_t *compass_img = lv_img_create(compass_group, NULL);
-  lv_img_set_src(compass_img, &compass);
-  lv_img_set_zoom(compass_img, 128);
-  lv_obj_align(compass_img, compass_group, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_set_auto_realign(compass_img, true);
-  lv_obj_add_style(compass_img, LV_IMG_PART_MAIN, &style);
 
   /* Handle LitlevGL tasks (tickless mode) */
   uint8_t cntr = 0;
