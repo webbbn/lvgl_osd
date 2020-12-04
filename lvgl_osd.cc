@@ -116,6 +116,11 @@ static lv_obj_t *north_arrow_img;
 */
 LV_IMG_DECLARE(satellite);
 LV_IMG_DECLARE(bat_full);
+LV_IMG_DECLARE(bat_0);
+LV_IMG_DECLARE(bat_1);
+LV_IMG_DECLARE(bat_2);
+LV_IMG_DECLARE(bat_3);
+LV_IMG_DECLARE(bat_4);
 LV_IMG_DECLARE(sig_0);
 LV_IMG_DECLARE(sig_1);
 LV_IMG_DECLARE(sig_2);
@@ -196,7 +201,7 @@ int main(int argv, char**argc) {
   // Create the Telemetry class that controls the telemetry receive threads
   Telemetry telem;
   if (!telem.start("127.0.0.1", 14950, "127.0.0.1", 5800)) {
-    fprintf(stderr, "Error starting the telemetry receive threads.");
+    fprintf(stderr, "Error starting the telemetry receive threads.\n");
     fflush(stderr);
   }
 
@@ -205,6 +210,9 @@ int main(int argv, char**argc) {
 
   /*Initialize the HAL for LittlevGL*/
   hal_init();
+
+  lv_obj_set_style_local_bg_opa(lv_scr_act(), LV_OBJMASK_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
+  lv_disp_set_bg_opa(NULL, LV_OPA_TRANSP);
 
   // Default style properties
   static lv_style_t style;
@@ -288,7 +296,7 @@ int main(int argv, char**argc) {
   lv_cont_set_fit(video_group, LV_FIT_TIGHT);
   lv_cont_set_layout(video_group, LV_LAYOUT_COLUMN_MID);
   lv_obj_align(video_group, NULL, LV_ALIGN_IN_TOP_MID, -200, 10);
-  lv_obj_add_style(video_group, LV_GAUGE_PART_MAJOR, &style);
+  //lv_obj_add_style(video_group, LV_GAUGE_PART_MAJOR, &style);
   lv_obj_add_style(video_group, LV_GAUGE_PART_MAIN, &style);
 
   // Create a custom style for the video gague
@@ -378,7 +386,7 @@ int main(int argv, char**argc) {
   lv_cont_set_fit(rssi_group, LV_FIT_TIGHT);
   lv_cont_set_layout(rssi_group, LV_LAYOUT_COLUMN_LEFT);
   lv_obj_align(rssi_group, NULL, LV_ALIGN_IN_TOP_MID, 200, 10);
-  lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAJOR, &rssi_style);
+  //lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAJOR, &rssi_style);
   lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAIN, &rssi_style);
 
   // Describe the color for the needles
@@ -516,7 +524,7 @@ int main(int argv, char**argc) {
 
   // Add the battery icon
   lv_obj_t *bat_img = lv_img_create(bat_group, NULL);
-  lv_img_set_src(bat_img, &bat_full);
+  lv_img_set_src(bat_img, &bat_0);
   lv_obj_align(bat_img, volt_label, LV_ALIGN_IN_RIGHT_MID, 100, 100);
   lv_obj_set_auto_realign(bat_img, true);
 
@@ -537,23 +545,20 @@ int main(int argv, char**argc) {
   lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
 
   /* Handle LitlevGL tasks (tickless mode) */
-  uint8_t cntr = 0;
-  uint8_t cntr2 = 0;
+  uint64_t loop_counter = 0;
+  uint8_t prev_bat_level = 0;
   while(1) {
-    lv_task_handler();
 #if defined(WIN32)
     lv_tick_inc(5);
     SDL_Delay(5);
-#endif
+#else
     usleep(5000);
-    if (++cntr == 20) {
-#if 0
-      lv_label_set_text_fmt(label, "Countdown: %d", cntr2);
-      lv_obj_align(label, NULL, LV_ALIGN_IN_BOTTOM_RIGHT, 0, 0);
-      lv_img_set_angle(att_back_img, cntr2 * 360);
 #endif
-      cntr = 0;
-      ++cntr2;
+    lv_task_handler();
+    ++loop_counter;
+    // Update the telemetry every 100 ms
+    if ((loop_counter % 20) == 0) {
+      bool blink_on = ((loop_counter % 200) > 100);
 
       // Get the geo coordinates from the telemetry
       float latitude = 0;
@@ -577,13 +582,32 @@ int main(int argv, char**argc) {
       lv_label_set_text_fmt(lon_label, "%3d %2d %5.1f %c", deg_int, min_int, sec, EW);
 
       // Set the battery status text
-      float remain = 75;
-      int temp_bat = 0;
-      if (telem.get_value("battery_remaining", remain) && (remain < 30)) {
-        temp_bat = 1;
+      float remain = 0;
+      uint8_t bat_level = 0;
+      if (telem.get_value("battery_remaining", remain)) {
+        bat_level = floor(remain / 20);
       }
-      if (telem.get_value("battery_remaining", remain) && (remain < 15)) {
-        temp_bat = 2;
+      if (bat_level != prev_bat_level) {
+        switch (bat_level) {
+          case 0:
+            lv_img_set_src(bat_img, &bat_0);
+            lv_obj_set_hidden(bat_img, blink_on);
+            break;
+          case 1:
+            lv_img_set_src(bat_img, &bat_1);
+            lv_obj_set_hidden(bat_img, blink_on);
+            break;
+          case 2:
+            lv_img_set_src(bat_img, &bat_2);
+            break;
+          case 3:
+            lv_img_set_src(bat_img, &bat_3);
+            break;
+          case 4:
+            lv_img_set_src(bat_img, &bat_4);
+            break;
+        }
+        prev_bat_level = bat_level;
       }
       float voltage = 11.9;
       telem.get_value("voltage_battery", voltage);
@@ -632,6 +656,7 @@ int main(int argv, char**argc) {
       telem.get_value("heading", heading);
       lv_img_set_angle(compass_img, (360.0 - heading) * 10);
     }
+    lv_task_handler();
   }
 
   return 0;

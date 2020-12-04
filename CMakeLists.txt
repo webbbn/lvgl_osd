@@ -39,6 +39,11 @@ add_executable(lvgl_osd
   north_arrow_ring.c
   satellite.c
   bat_full.c
+  bat_0.c
+  bat_1.c
+  bat_2.c
+  bat_3.c
+  bat_4.c
   sig_0.c
   sig_1.c
   sig_2.c
