@@ -232,8 +232,8 @@ void Telemetry::reader_thread() {
 	  set_value("relative_altitude", static_cast<float>(pos.relative_alt) / 1000.0);
 	  set_value("speed", sqrt(pos.vx * pos.vx + pos.vy * pos.vy + pos.vz * pos.vz) / 100.0);
           // iNav is raw degrees (no scaling).
-	  set_value("heading", static_cast<float>(pos.hdg));
-	  //set_value("heading", static_cast<float>(pos.hdg) / 100.0);
+	  //set_value("heading", static_cast<float>(pos.hdg));
+	  set_value("heading", static_cast<float>(pos.hdg) / 100.0);
 	  break;
 	case MAVLINK_MSG_ID_ATTITUDE:
 	  mavlink_attitude_t att;
