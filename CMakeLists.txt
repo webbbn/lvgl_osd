@@ -46,5 +46,7 @@ add_executable(lvgl_osd
   sig_4.c
   sig_5.c
   sig_6.c
+  north_needle.c
+  compass.c
   ${SOURCES} ${INCLUDES})
 target_link_libraries(lvgl_osd PRIVATE ${EXTRA_LIBS})
