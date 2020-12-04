@@ -591,11 +591,9 @@ int main(int argv, char**argc) {
         switch (bat_level) {
           case 0:
             lv_img_set_src(bat_img, &bat_0);
-            lv_obj_set_hidden(bat_img, blink_on);
             break;
           case 1:
             lv_img_set_src(bat_img, &bat_1);
-            lv_obj_set_hidden(bat_img, blink_on);
             break;
           case 2:
             lv_img_set_src(bat_img, &bat_2);
@@ -603,11 +601,14 @@ int main(int argv, char**argc) {
           case 3:
             lv_img_set_src(bat_img, &bat_3);
             break;
-          case 4:
+          default:
             lv_img_set_src(bat_img, &bat_4);
             break;
         }
         prev_bat_level = bat_level;
+      }
+      if (bat_level < 2) {
+        lv_obj_set_hidden(bat_img, blink_on);
       }
       float voltage = 11.9;
       telem.get_value("voltage_battery", voltage);
@@ -656,7 +657,6 @@ int main(int argv, char**argc) {
       telem.get_value("heading", heading);
       lv_img_set_angle(compass_img, (360.0 - heading) * 10);
     }
-    lv_task_handler();
   }
 
   return 0;
