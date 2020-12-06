@@ -445,20 +445,27 @@ void Telemetry::wfb_reader_thread() {
       uint32_t total_packets = 0;
       uint32_t dropped_packets = 0;
       uint32_t bad_blocks = 0;
+      uint32_t inject_errors = 0;
+      uint32_t tx_dropped_packets = 0;
       if (prev_stats.size() > 0) {
         const auto &head = prev_stats.front().second;
         total_packets = link_stats.received_packet_cnt - head.received_packet_cnt;
         dropped_packets = link_stats.lost_packet_cnt - head.lost_packet_cnt;
         bad_blocks = link_stats.damaged_block_cnt - head.damaged_block_cnt;
+        inject_errors = link_stats.injection_fail_cnt - head.injection_fail_cnt;
       }
       set_value("rx_video_rssi", link_stats.adapter[0].current_signal_dbm);
       set_value("rx_video_packet_count", total_packets);
       set_value("rx_video_dropped_packets", dropped_packets);
       set_value("rx_video_bad_blocks", bad_blocks);
+      set_value("rx_video_inject_errors", inject_errors);
+      set_value("rx_video_dropped_packet_perc", float(dropped_packets) / float(total_packets));
       set_value("rx_video_quality",
                 (total_packets == 0) ? 100.0 :
                 std::max(100.0 - 10.0 * dropped_packets / total_packets, 0.0));
       set_value("rx_video_bitrate", 1000.0 * link_stats.kbitrate);
+      set_value("tx_rssi", link_stats.current_signal_telemetry_uplink);
+      set_value("tx_dropped_packets", tx_dropped_packets);
     }
 
     prev_link_stats = link_stats;

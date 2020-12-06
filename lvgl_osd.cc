@@ -295,6 +295,7 @@ int main(int argv, char**argc) {
   lv_color_t video_needle_colors[2];
   video_needle_colors[0] = LV_COLOR_YELLOW;
   video_needle_colors[1] = LV_COLOR_RED;
+  video_needle_colors[2] = LV_COLOR_BLUE;
 
   // Create the video guage
   lv_obj_t *video_gauge = lv_gauge_create(video_group, NULL);
@@ -706,21 +707,34 @@ int main(int argv, char**argc) {
       // Set the downlink stats
       float rx_rssi = 0;
       float rx_video_packet_count = 0;
-      float rx_video_rssi = 8347837.5;
-      float rx_video_dropped_packets = 10;
-      float rx_video_bad_blocks = 99;
-      float rx_video_bitrate = 10.2;
+      float rx_video_rssi = 0;
+      float rx_video_dropped_packets = 0;
+      float rx_video_bad_blocks = 0;
+      float rx_video_bitrate = 0;
+      float rx_video_dropped_packet_perc = 0;
+      float rx_video_inject_errors = 0;
+      float tx_rssi = 0;
+      float tx_dropped_packets = 0;
       telem.get_value("rx_video_rssi", rx_rssi);
       telem.get_value("rx_video_packet_count", rx_video_packet_count);
       telem.get_value("rx_video_bitrate", rx_video_bitrate);
       telem.get_value("rx_video_dropped_packets", rx_video_dropped_packets);
       telem.get_value("rx_video_bad_blocks", rx_video_bad_blocks);
+      telem.get_value("rx_video_dropped_packet_perc", rx_video_dropped_packet_perc);
+      telem.get_value("rx_video_inject_errors", rx_video_inject_errors);
+      telem.get_value("tx_rssi", tx_rssi);
+      telem.get_value("tx_dropped_packets", tx_dropped_packets);
       lv_label_set_text_fmt(rssi_down_label, "%6.1f", rx_rssi);
       lv_label_set_text_fmt(rx_bitrate_label, "%4.1f",
                             rx_video_bitrate * 1e-6);
       lv_gauge_set_value(rssi_gauge, 0, rx_rssi);
-      lv_gauge_set_value(video_gauge, 0, int(rint(rx_video_dropped_packets / rx_video_packet_count)));
-      lv_gauge_set_value(video_gauge, 1, int(rint(rx_video_bad_blocks / rx_video_packet_count)));
+      lv_gauge_set_value(rssi_gauge, 1, tx_rssi);
+      lv_gauge_set_value(video_gauge, 0,
+                         int(rint(std::max(rx_video_dropped_packet_perc * 100.0, 20.0))));
+      lv_gauge_set_value(video_gauge, 1,
+                         int(rint(std::max(100.0 * rx_video_bad_blocks /
+                                           rx_video_packet_count, 20.0))));
+      lv_gauge_set_value(video_gauge, 2, int(rint(rx_video_inject_errors)));
 
       float heading = 0;
       float home_direction = 90.0;
