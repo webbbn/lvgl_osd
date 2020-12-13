@@ -730,7 +730,7 @@ int main(int argv, char**argc) {
       lv_gauge_set_value(rssi_gauge, 0, rx_rssi);
       lv_gauge_set_value(rssi_gauge, 1, tx_rssi);
       lv_gauge_set_value(video_gauge, 0,
-                         int(rint(std::max(rx_video_dropped_packet_perc * 100.0, 20.0))));
+                         int(rint(std::min(rx_video_dropped_packet_perc * 100.0, 20.0))));
       lv_gauge_set_value(video_gauge, 1, int(rint(rx_video_bad_blocks)));
       lv_gauge_set_value(video_gauge, 2, int(rint(rx_video_inject_errors)));
 
