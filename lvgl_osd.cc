@@ -1,31 +1,36 @@
 
+/*********************
+ *      INCLUDES
+ *********************/
+#define _DEFAULT_SOURCE /* needed for usleep() */
+#include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <time.h>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <stdio.h>
-
-#include <cmath>
+#define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain" \
+                            issue*/
+#include <SDL2/SDL.h>
+#include "lvgl/lvgl.h"
+#include "lv_drivers/display/monitor.h"
 
 #include "telemetry.hh"
-#include "lvgl/lvgl.h"
-#if defined(WIN32)
-#include "lv_drivers/display/monitor.h"
-#include "lv_drivers/indev/mouse.h"
-#include "lv_drivers/indev/keyboard.h"
-#else
-#include "lv_drivers/display/fbdev.h"
-#endif
 
-#define DISP_BUF_SIZE (LV_VER_RES_MAX * LV_HOR_RES_MAX)
-#define CANVAS_WIDTH LV_HOR_RES_MAX
-#define CANVAS_HEIGHT LV_VER_RES_MAX
+/*********************
+ *      DEFINES
+ *********************/
 
-uint32_t custom_tick_get(void);
-void lv_ex_canvas_2(void);
+/**********************
+ *      TYPEDEFS
+ **********************/
+
+/**********************
+ *  STATIC PROTOTYPES
+ **********************/
+static void hal_init(void);
 static int tick_thread(void *data);
+static void memory_monitor(lv_task_t *param);
 
+/**********************
+ *  STATIC VARIABLES
+ **********************/
 static lv_indev_t * kb_indev;
 static lv_style_t style;
 static const char *g_arducopter_mode_strings[] = {
@@ -74,32 +79,10 @@ static const char *g_arduplane_mode_strings[] = {
  "QAcro"
 };
 
-class Label {
-public:
+/**********************
+ *      IMAGES
+ **********************/
 
-  Label(const std::string &text, uint16_t x, uint16_t y, lv_obj_t *par = 0)
-    : m_x(x), m_y(y) {
-    lv_obj_t *parrent = par ? par : lv_scr_act();
-
-    m_label = lv_label_create(lv_scr_act(), NULL);
-    lv_label_set_align(m_label, LV_LABEL_ALIGN_LEFT);
-    lv_label_set_text(m_label, text.c_str());
-    lv_obj_align(m_label, NULL, LV_ALIGN_CENTER, x, y);
-
-    lv_style_copy(&m_style, &style);
-    //lv_style_set_text_font(&m_style, LV_STATE_DEFAULT, &lv_font_montserrat_48);
-    lv_style_set_text_font(&m_style, LV_STATE_DEFAULT, &lv_font_montserrat_24);
-    lv_obj_add_style(m_label, LV_LABEL_PART_MAIN, &m_style);
-  }
-
-private:
-  uint16_t m_x;
-  uint16_t m_y;
-  lv_style_t m_style;
-  lv_obj_t *m_label;
-};
-
-// Images
 LV_IMG_DECLARE(satellite);
 LV_IMG_DECLARE(bat_full);
 LV_IMG_DECLARE(bat_0);
@@ -118,72 +101,17 @@ LV_IMG_DECLARE(north_needle);
 LV_IMG_DECLARE(compass);
 LV_IMG_DECLARE(home_arrow);
 
-/**
- * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics library
- */
-static void hal_init(void) {
+/**********************
+ *      MACROS
+ **********************/
 
-#if defined(WIN32)
-  /* Add a display
-   * Use the 'monitor' driver which creates window on PC's monitor to simulate a display*/
-  monitor_init();
+/**********************
+ *   GLOBAL FUNCTIONS
+ **********************/
 
-  static lv_disp_buf_t disp_buf1;
-  static lv_color_t buf1_1[LV_HOR_RES_MAX * 120];
-  lv_disp_buf_init(&disp_buf1, buf1_1, NULL, LV_HOR_RES_MAX * 120);
-  lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);            /*Basic initialization*/
-  disp_drv.buffer = &disp_buf1;
-  disp_drv.flush_cb = monitor_flush;
-  lv_disp_drv_register(&disp_drv);
-
-  /* Add the mouse (or touchpad) as input device
-   * Use the 'mouse' driver which reads the PC's mouse*/
-  mouse_init();
-  lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);          /*Basic initialization*/
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = mouse_read;         /*This function will be called periodically (by the library) to get the mouseposition and state*/
-  lv_indev_drv_register(&indev_drv);
-
-  /* If the PC keyboard driver is enabled in`lv_drv_conf.h`
-   * add this as an input device. It might be used in some examples. */
-#if USE_KEYBOARD
-  lv_indev_drv_t kb_drv;
-  lv_indev_drv_init(&kb_drv);
-  kb_drv.type = LV_INDEV_TYPE_KEYPAD;
-  kb_drv.read_cb = keyboard_read;
-  kb_indev = lv_indev_drv_register(&kb_drv);
-#endif
-
-  /* Tick init.
-   * You have to call 'lv_tick_inc()' in every milliseconds
-   * Create an SDL thread to do this*/
-  //SDL_CreateThread(tick_thread, "tick", NULL);
-
-#else
-
-  /* Linux frame buffer device init */
-  fbdev_init();
-
-  /* A small buffer for LittlevGL to draw the screen's content */
-  static lv_color_t buf[DISP_BUF_SIZE];
-
-  /* Initialize a descriptor for the buffer */
-  static lv_disp_buf_t disp_buf;
-  lv_disp_buf_init(&disp_buf, buf, NULL, DISP_BUF_SIZE);
-
-  /* Initialize and register a display driver */
-  lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-  disp_drv.buffer   = &disp_buf;
-  disp_drv.flush_cb = fbdev_flush;
-  lv_disp_drv_register(&disp_drv);
-#endif
-}
-
-int main(int argv, char**argc) {
-  fflush(stdout);
+int main(int argc, char **argv) {
+  (void)argc; /*Unused*/
+  (void)argv; /*Unused*/
 
   // Create the Telemetry class that controls the telemetry receive threads
   Telemetry telem;
@@ -192,10 +120,10 @@ int main(int argv, char**argc) {
     fflush(stderr);
   }
 
-  /* LittlevGL init */
+  /*Initialize LVGL*/
   lv_init();
 
-  /*Initialize the HAL for LittlevGL*/
+  /*Initialize the HAL (display, input devices, tick) for LVGL*/
   hal_init();
 
   lv_obj_set_style_local_bg_opa(lv_scr_act(), LV_OBJMASK_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
@@ -287,19 +215,19 @@ int main(int argv, char**argc) {
   lv_obj_add_style(video_group, LV_GAUGE_PART_MAIN, &style);
 
   // Create a custom style for the video gague
-  lv_style_t video_style;
+  static lv_style_t video_style;
   lv_style_copy(&video_style, &style);
   lv_style_set_pad_inner(&video_style, LV_GAUGE_PART_MAIN, 10);
 
   // Describe the color for the needles
-  lv_color_t video_needle_colors[2];
+  static lv_color_t video_needle_colors[2];
   video_needle_colors[0] = LV_COLOR_YELLOW;
   video_needle_colors[1] = LV_COLOR_RED;
   video_needle_colors[2] = LV_COLOR_BLUE;
 
   // Create the video guage
   lv_obj_t *video_gauge = lv_gauge_create(video_group, NULL);
-  lv_gauge_set_needle_count(video_gauge, 2, video_needle_colors);
+  //lv_gauge_set_needle_count(video_gauge, 2, video_needle_colors);
   lv_obj_set_size(video_gauge, 150, 150);
   lv_obj_align(video_gauge, video_group, LV_ALIGN_CENTER, 0, 0);
   lv_gauge_set_range(video_gauge, 0, 20);
@@ -393,7 +321,7 @@ int main(int argv, char**argc) {
   lv_obj_add_style(rssi_group, LV_GAUGE_PART_MAIN, &rssi_style);
 
   // Describe the color for the needles
-  lv_color_t rssi_needle_colors[2];
+  static lv_color_t rssi_needle_colors[2];
   rssi_needle_colors[0] = LV_COLOR_YELLOW;
   rssi_needle_colors[1] = LV_COLOR_RED;
 
@@ -547,18 +475,13 @@ int main(int argv, char**argc) {
   lv_style_set_text_font(&mode_style, LV_STATE_DEFAULT, &lv_font_montserrat_40);
   lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
 
-  /* Handle LitlevGL tasks (tickless mode) */
   uint64_t loop_counter = 0;
   uint8_t prev_bat_level = 0;
-  while(1) {
-#if defined(WIN32)
-    lv_tick_inc(5);
-    SDL_Delay(5);
-#else
-    usleep(5000);
-#endif
+  while (1) {
+    /* Periodically call the lv_task handler.
+     * It could be done in a timer interrupt or an OS task too.*/
     lv_task_handler();
-    ++loop_counter;
+      ++loop_counter;
     // Update the telemetry every 100 ms
     if ((loop_counter % 20) == 0) {
       bool blink_on = ((loop_counter % 200) > 100);
@@ -742,25 +665,74 @@ int main(int argv, char**argc) {
       lv_label_set_text_fmt(orientation_label, "%5.1f", heading);
       lv_img_set_angle(home_img, home_direction * 10);
     }
+
+    usleep(5 * 1000);
   }
 
   return 0;
 }
 
-/* Set in lv_conf.h as `LV_TICK_CUSTOM_SYS_TIME_EXPR` */
-uint32_t custom_tick_get(void) {
-  static uint64_t start_ms = 0;
-  if(start_ms == 0) {
-    struct timeval tv_start;
-    gettimeofday(&tv_start, NULL);
-    start_ms = (tv_start.tv_sec * 1000000 + tv_start.tv_usec) / 1000;
+/**********************
+ *   STATIC FUNCTIONS
+ **********************/
+
+/**
+ * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics
+ * library
+ */
+static void hal_init(void) {
+  /* Use the 'monitor' driver which creates window on PC's monitor to simulate a display*/
+  monitor_init();
+
+  /*Create a display buffer*/
+  static lv_disp_buf_t disp_buf1;
+  static lv_color_t buf1_1[LV_HOR_RES_MAX * 120];
+  lv_disp_buf_init(&disp_buf1, buf1_1, NULL, LV_HOR_RES_MAX * 120);
+
+  /*Create a display*/
+  lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv); /*Basic initialization*/
+  disp_drv.buffer = &disp_buf1;
+  disp_drv.flush_cb = monitor_flush;
+  lv_disp_drv_register(&disp_drv);
+
+  /* Tick init.
+   * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about
+   * how much time were elapsed Create an SDL thread to do this*/
+  SDL_CreateThread(tick_thread, "tick", NULL);
+
+  /* Optional:
+   * Create a memory monitor task which prints the memory usage in
+   * periodically.*/
+  lv_task_create(memory_monitor, 5000, LV_TASK_PRIO_MID, NULL);
+}
+
+/**
+ * A task to measure the elapsed time for LVGL
+ * @param data unused
+ * @return never return
+ */
+static int tick_thread(void *data) {
+  (void)data;
+
+  while (1) {
+    SDL_Delay(5);   /*Sleep for 5 millisecond*/
+    lv_tick_inc(5); /*Tell LittelvGL that 5 milliseconds were elapsed*/
   }
 
-  struct timeval tv_now;
-  gettimeofday(&tv_now, NULL);
-  uint64_t now_ms;
-  now_ms = (tv_now.tv_sec * 1000000 + tv_now.tv_usec) / 1000;
+  return 0;
+}
 
-  uint32_t time_ms = now_ms - start_ms;
-  return time_ms;
+/**
+ * Print the memory usage periodically
+ * @param param
+ */
+static void memory_monitor(lv_task_t *param) {
+  (void)param; /*Unused*/
+
+  lv_mem_monitor_t mon;
+  lv_mem_monitor(&mon);
+  printf("used: %6d (%3d %%), frag: %3d %%, biggest free: %6d\n",
+         (int)mon.total_size - mon.free_size, mon.used_pct, mon.frag_pct,
+         (int)mon.free_biggest_size);
 }
