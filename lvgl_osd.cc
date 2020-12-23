@@ -8,9 +8,9 @@
 #define SDL_MAIN_HANDLED /*To fix SDL's "undefined reference to WinMain" \
                             issue*/
 #include <SDL2/SDL.h>
-#include "lvgl/lvgl.h"
-#include "lv_drivers/display/monitor.h"
 
+#include "lvgl/lvgl.h"
+#include "mpv_monitor.h"
 #include "telemetry.hh"
 
 /*********************
@@ -24,7 +24,7 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static void hal_init(void);
+static bool hal_init(void);
 static int tick_thread(void *data);
 static void memory_monitor(lv_task_t *param);
 
@@ -110,21 +110,22 @@ LV_IMG_DECLARE(home_arrow);
  **********************/
 
 int main(int argc, char **argv) {
-  (void)argc; /*Unused*/
-  (void)argv; /*Unused*/
 
   // Create the Telemetry class that controls the telemetry receive threads
   Telemetry telem;
   if (!telem.start("127.0.0.1", 14950, "127.0.0.1", 5800)) {
     fprintf(stderr, "Error starting the telemetry receive threads.\n");
-    fflush(stderr);
+    return EXIT_FAILURE;
   }
 
   /*Initialize LVGL*/
   lv_init();
 
   /*Initialize the HAL (display, input devices, tick) for LVGL*/
-  hal_init();
+  if (!hal_init()) {
+    return EXIT_FAILURE;
+  }
+  printf("HAL initialized\n");
 
   lv_obj_set_style_local_bg_opa(lv_scr_act(), LV_OBJMASK_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
   lv_disp_set_bg_opa(NULL, LV_OPA_TRANSP);
@@ -475,13 +476,20 @@ int main(int argc, char **argv) {
   lv_style_set_text_font(&mode_style, LV_STATE_DEFAULT, &lv_font_montserrat_40);
   lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
 
+  // Play a video URL if requested.
+  if (argc == 2) {
+    mpv_play_video(argv[1]);
+  }
+
   uint64_t loop_counter = 0;
   uint8_t prev_bat_level = 0;
   while (1) {
+
     /* Periodically call the lv_task handler.
      * It could be done in a timer interrupt or an OS task too.*/
     lv_task_handler();
-      ++loop_counter;
+    ++loop_counter;
+
     // Update the telemetry every 100 ms
     if ((loop_counter % 20) == 0) {
       bool blink_on = ((loop_counter % 200) > 100);
@@ -680,7 +688,8 @@ int main(int argc, char **argv) {
  * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics
  * library
  */
-static void hal_init(void) {
+static bool hal_init() {
+
   /* Use the 'monitor' driver which creates window on PC's monitor to simulate a display*/
   monitor_init();
 
@@ -705,6 +714,8 @@ static void hal_init(void) {
    * Create a memory monitor task which prints the memory usage in
    * periodically.*/
   lv_task_create(memory_monitor, 5000, LV_TASK_PRIO_MID, NULL);
+
+  return true;
 }
 
 /**
