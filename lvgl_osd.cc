@@ -115,7 +115,6 @@ int main(int argc, char **argv) {
   Telemetry telem;
   if (!telem.start("127.0.0.1", 14950, "127.0.0.1", 5800)) {
     fprintf(stderr, "Error starting the telemetry receive threads.\n");
-    return EXIT_FAILURE;
   }
 
   /*Initialize LVGL*/
@@ -189,6 +188,11 @@ int main(int argc, char **argv) {
   lv_style_set_pad_left(&style, LV_IMG_PART_MAIN, 0);
   lv_style_set_pad_right(&style, LV_IMG_PART_MAIN, 0);
 
+  // Line properties
+  lv_style_set_line_width(&style, LV_LINE_PART_MAIN, 3);
+  lv_style_set_line_color(&style, LV_LINE_PART_MAIN, LV_COLOR_WHITE);
+  lv_style_set_line_rounded(&style, LV_LINE_PART_MAIN, true);
+
   lv_obj_add_style(lv_scr_act(), LV_OBJ_PART_MAIN, &style);
 
   // Copy the style for labels, but increase the font size
@@ -200,6 +204,7 @@ int main(int argc, char **argv) {
   static lv_style_t units_style;
   lv_style_copy(&units_style, &label_style);
   lv_style_set_text_font(&units_style, LV_STATE_DEFAULT, &lv_font_montserrat_14);
+
 
   /*******************************
    * Create the video stats gague
@@ -476,11 +481,38 @@ int main(int argc, char **argv) {
   lv_style_set_text_font(&mode_style, LV_STATE_DEFAULT, &lv_font_montserrat_40);
   lv_obj_add_style(mode_label, LV_LABEL_PART_MAIN, &mode_style);
 
+  /**************************************
+   * Create the attitude indicator
+   **************************************/
+
+  // Create the top-level attitude group
+  lv_obj_t *att_group = lv_cont_create(lv_scr_act(), NULL);
+  lv_obj_set_auto_realign(att_group, true);
+  lv_obj_align_origo(att_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_cont_set_fit(att_group, LV_FIT_TIGHT);
+  lv_cont_set_layout(att_group, LV_LAYOUT_ROW_MID);
+  lv_obj_align(att_group, NULL, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_add_style(att_group, LV_LINE_PART_MAIN, &style);
+
+  // Add the horizon lines
+  static lv_point_t horizon_points[] = {
+    { 0, 0 },
+    { LV_HOR_RES_MAX / 10 - LV_HOR_RES_MAX / 50, 0 },
+    { LV_HOR_RES_MAX / 10, LV_VER_RES_MAX / 50 },
+    { LV_HOR_RES_MAX / 10 + LV_HOR_RES_MAX / 50, 0 },
+    { LV_HOR_RES_MAX / 5, 0 }
+  };
+  lv_obj_t *horizon_line = lv_line_create(lv_scr_act(), NULL);
+  lv_line_set_points(horizon_line, horizon_points, sizeof(horizon_points) / sizeof(lv_point_t));
+  lv_obj_add_style(horizon_line, LV_LINE_PART_MAIN, &style);
+  lv_obj_align(horizon_line, att_group, LV_ALIGN_CENTER, 0, 0);
+
   // Play a video URL if requested.
   if (argc == 2) {
     mpv_play_video(argv[1]);
   }
 
+  /* Handle LitlevGL tasks (tickless mode) */
   uint64_t loop_counter = 0;
   uint8_t prev_bat_level = 0;
   while (1) {
