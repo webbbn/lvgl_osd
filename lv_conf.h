@@ -23,13 +23,9 @@
 #define LV_FULLSCREEN      1
 
 /* Maximal horizontal and vertical resolution to support by the library.*/
-#if LV_FULLSCREEN
-#define LV_HOR_RES_MAX          (1920)
-#define LV_VER_RES_MAX          (1080)
-#else
 #define LV_HOR_RES_MAX          (1280)
 #define LV_VER_RES_MAX          (720)
-#endif
+
 
 /* Color depth:
  * - 1:  1 byte per pixel

@@ -1,10 +1,10 @@
 /**
- * @file monitor.h
+ * @file ffmpeg_monitor.h
  *
  */
 
-#ifndef MONITOR_H
-#define MONITOR_H
+#ifndef FFMPEG_MONITOR_H
+#define FFMPEG_MONITOR_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,7 +21,7 @@ extern "C" {
 #endif
 #endif
 
-#if USE_MPV_MONITOR
+#if USE_FFMPEG_MONITOR
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE
 #include "lvgl.h"
@@ -42,17 +42,15 @@ extern "C" {
  **********************/
 void monitor_init(const char *url);
 void monitor_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
-void monitor_flush2(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
-void mpv_play_video(const char *url);
 
 /**********************
  *      MACROS
  **********************/
 
-#endif /* USE_MPV_MONITOR */
+#endif /* USE_FFMPEG_MONITOR */
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
-#endif /* MONITOR_H */
+#endif /* FFMPEG_MONITOR_H */

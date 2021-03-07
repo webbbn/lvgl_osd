@@ -11,6 +11,7 @@
 
 #include "lvgl/lvgl.h"
 #include "mpv_monitor.h"
+#include "ffmpeg_monitor.h"
 #include "telemetry.hh"
 
 /*********************
@@ -24,9 +25,6 @@
 /**********************
  *  STATIC PROTOTYPES
  **********************/
-static bool hal_init(void);
-static int tick_thread(void *data);
-static void memory_monitor(lv_task_t *param);
 
 /**********************
  *  STATIC VARIABLES
@@ -121,9 +119,7 @@ int main(int argc, char **argv) {
   lv_init();
 
   /*Initialize the HAL (display, input devices, tick) for LVGL*/
-  if (!hal_init()) {
-    return EXIT_FAILURE;
-  }
+  monitor_init(argv[1]);
   printf("HAL initialized\n");
 
   lv_obj_set_style_local_bg_opa(lv_scr_act(), LV_OBJMASK_PART_MAIN, LV_STATE_DEFAULT, LV_OPA_TRANSP);
@@ -507,11 +503,6 @@ int main(int argc, char **argv) {
   lv_obj_add_style(horizon_line, LV_LINE_PART_MAIN, &style);
   lv_obj_align(horizon_line, att_group, LV_ALIGN_CENTER, 0, 0);
 
-  // Play a video URL if requested.
-  if (argc == 2) {
-    mpv_play_video(argv[1]);
-  }
-
   /* Handle LitlevGL tasks (tickless mode) */
   uint64_t loop_counter = 0;
   uint8_t prev_bat_level = 0;
@@ -715,67 +706,3 @@ int main(int argc, char **argv) {
 /**********************
  *   STATIC FUNCTIONS
  **********************/
-
-/**
- * Initialize the Hardware Abstraction Layer (HAL) for the Littlev graphics
- * library
- */
-static bool hal_init() {
-
-  /* Use the 'monitor' driver which creates window on PC's monitor to simulate a display*/
-  monitor_init();
-
-  /*Create a display buffer*/
-  static lv_disp_buf_t disp_buf1;
-  static lv_color_t buf1_1[LV_HOR_RES_MAX * 120];
-  lv_disp_buf_init(&disp_buf1, buf1_1, NULL, LV_HOR_RES_MAX * 120);
-
-  /*Create a display*/
-  lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv); /*Basic initialization*/
-  disp_drv.buffer = &disp_buf1;
-  disp_drv.flush_cb = monitor_flush;
-  lv_disp_drv_register(&disp_drv);
-
-  /* Tick init.
-   * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about
-   * how much time were elapsed Create an SDL thread to do this*/
-  SDL_CreateThread(tick_thread, "tick", NULL);
-
-  /* Optional:
-   * Create a memory monitor task which prints the memory usage in
-   * periodically.*/
-  lv_task_create(memory_monitor, 5000, LV_TASK_PRIO_MID, NULL);
-
-  return true;
-}
-
-/**
- * A task to measure the elapsed time for LVGL
- * @param data unused
- * @return never return
- */
-static int tick_thread(void *data) {
-  (void)data;
-
-  while (1) {
-    SDL_Delay(5);   /*Sleep for 5 millisecond*/
-    lv_tick_inc(5); /*Tell LittelvGL that 5 milliseconds were elapsed*/
-  }
-
-  return 0;
-}
-
-/**
- * Print the memory usage periodically
- * @param param
- */
-static void memory_monitor(lv_task_t *param) {
-  (void)param; /*Unused*/
-
-  lv_mem_monitor_t mon;
-  lv_mem_monitor(&mon);
-  printf("used: %6d (%3d %%), frag: %3d %%, biggest free: %6d\n",
-         (int)mon.total_size - mon.free_size, mon.used_pct, mon.frag_pct,
-         (int)mon.free_biggest_size);
-}

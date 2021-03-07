@@ -56,6 +56,7 @@ typedef struct {
 /**********************
  *  STATIC PROTOTYPES
  **********************/
+static int tick_thread(void *data);
 static void window_create(monitor_t * m);
 static void window_update();
 static void redraw();
@@ -100,10 +101,47 @@ static SDL_GLContext glcontext;
 /**
  * Initialize the monitor
  */
-void monitor_init(void)
-{
+void monitor_init(const char *url) {
   monitor_sdl_init();
   lv_task_create(sdl_event_handler, 10, LV_TASK_PRIO_HIGH, NULL);
+
+  /*Create a display buffer*/
+  static lv_disp_buf_t disp_buf1;
+  static lv_color_t buf1_1[LV_HOR_RES_MAX * 120];
+  lv_disp_buf_init(&disp_buf1, buf1_1, NULL, LV_HOR_RES_MAX * 120);
+
+  /*Create a display*/
+  lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv); /*Basic initialization*/
+  disp_drv.buffer = &disp_buf1;
+  disp_drv.flush_cb = monitor_flush;
+  lv_disp_drv_register(&disp_drv);
+
+  /* Tick init.
+   * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about
+   * how much time were elapsed Create an SDL thread to do this*/
+  SDL_CreateThread(tick_thread, "tick", NULL);
+
+#ifdef USE_MPV
+  const char *cmd[] = {"loadfile", url, NULL};
+  mpv_set_option_string(mpv, "gpu-context", "drm");
+  mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
+  mpv_set_option_string(mpv, "terminal", "yes");
+  mpv_set_option_string(mpv, "untimed", "yes");
+  mpv_set_option_string(mpv, "no-cache", "yes");
+  mpv_set_option_string(mpv, "video-sync", "audio");
+  mpv_set_option_string(mpv, "video-latency-hacks", "yes");
+  mpv_set_option_string(mpv, "stream-buffer-size", "4k");
+  mpv_set_option_string(mpv, "no-correct-pts", "yes");
+  mpv_set_option_string(mpv, "fps", "60");
+    
+  mpv_set_option_string(mpv, "audio-buffer", "0");
+  mpv_set_option_string(mpv, "vd-lavc-threads", "1");
+  mpv_set_option_string(mpv, "demuxer-lavf-analyzeduration", "0.1");
+  mpv_set_option_string(mpv, "demuxer-lavf-probe-info", "nostreams");
+  mpv_set_option_string(mpv, "demuxer-lavf-o-add", "fflags=+nobuffer");
+  mpv_command_async(mpv, 0, cmd);
+#endif
 }
 
 /**
@@ -167,32 +205,41 @@ void monitor_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t 
 }
 
 void mpv_play_video(const char *url) {
-#ifdef USE_MPV
-  const char *cmd[] = {"loadfile", url, NULL};
-  mpv_set_option_string(mpv, "gpu-context", "drm");
-  mpv_set_option_string(mpv, "vd-lavc-dr", "yes");
-  mpv_set_option_string(mpv, "terminal", "yes");
-  mpv_set_option_string(mpv, "untimed", "yes");
-  mpv_set_option_string(mpv, "no-cache", "yes");
-  mpv_set_option_string(mpv, "video-sync", "audio");
-  mpv_set_option_string(mpv, "video-latency-hacks", "yes");
-  mpv_set_option_string(mpv, "stream-buffer-size", "4k");
-  mpv_set_option_string(mpv, "no-correct-pts", "yes");
-  mpv_set_option_string(mpv, "fps", "60");
-    
-  mpv_set_option_string(mpv, "audio-buffer", "0");
-  mpv_set_option_string(mpv, "vd-lavc-threads", "1");
-  mpv_set_option_string(mpv, "demuxer-lavf-analyzeduration", "0.1");
-  mpv_set_option_string(mpv, "demuxer-lavf-probe-info", "nostreams");
-  mpv_set_option_string(mpv, "demuxer-lavf-o-add", "fflags=+nobuffer");
-  mpv_set_option_string(mpv, "video-timing-offset", "0"); // this need manual fps adjustment  mpv_render_frame_info()
-  mpv_command_async(mpv, 0, cmd);
-#endif
 }
 
 /**********************
  *   STATIC FUNCTIONS
  **********************/
+
+/**
+ * A task to measure the elapsed time for LVGL
+ * @param data unused
+ * @return never return
+ */
+static int tick_thread(void *data) {
+  (void)data;
+
+  while (1) {
+    SDL_Delay(5);   /*Sleep for 5 millisecond*/
+    lv_tick_inc(5); /*Tell LittelvGL that 5 milliseconds were elapsed*/
+  }
+
+  return 0;
+}
+
+/**
+ * Print the memory usage periodically
+ * @param param
+ */
+static void memory_monitor(lv_task_t *param) {
+  (void)param; /*Unused*/
+
+  lv_mem_monitor_t mon;
+  lv_mem_monitor(&mon);
+  printf("used: %6d (%3d %%), frag: %3d %%, biggest free: %6d\n",
+         (int)mon.total_size - mon.free_size, mon.used_pct, mon.frag_pct,
+         (int)mon.free_biggest_size);
+}
 
 /**
  * SDL main thread. All SDL related task have to be handled here!
@@ -354,7 +401,12 @@ static void window_create(monitor_t * m)
     fprintf(stderr, "failed to create SDL GL context");
   }
 #ifdef USE_MPV
-  // Initilize MPV on this window.
+  // Initialize the mpv interface
+  if (!(mpv = mpv_create())) {
+    fprintf(stderr, "Error creating the libmpv interface.\n");
+  }
+
+ // Initilize MPV on this window.
   int adv_ctrl_flag = 1;
   mpv_opengl_init_params opengl_init_params =
     {
@@ -451,7 +503,6 @@ static void redraw() {
   // other API details.
   mpv_render_context_render(mpv_gl, params);
   // Re-enable blending, which MPV apparently turns off
-  glEnable(GL_BLEND);
 #endif
   SDL_RenderCopy(monitor.renderer, monitor.texture, NULL, NULL);
   SDL_GL_SwapWindow(monitor.window);
